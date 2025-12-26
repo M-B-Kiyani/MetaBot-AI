@@ -7,7 +7,7 @@ import {
   FunctionCall,
   FunctionResult,
 } from '../../../../packages/shared/src/types/ai';
-import logger from '../config/logger';
+import { logger } from '../config/logger';
 
 export interface GeminiService {
   generateResponse(

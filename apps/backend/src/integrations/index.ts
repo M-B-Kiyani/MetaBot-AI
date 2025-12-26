@@ -1,9 +1,15 @@
 // External service integrations
 export { GoogleCalendarService } from './GoogleCalendarService';
 export { HubSpotService, type ContactData } from './HubSpotService';
+export { RetellService } from './RetellService';
 
 // Service instances
-export { googleCalendarService, hubspotService, testExternalServiceIntegrations } from './integration-test';
+export {
+  googleCalendarService,
+  hubspotService,
+  testExternalServiceIntegrations,
+} from './integration-test';
+export { retellService } from './RetellService';
 
 // Types
 export type { CalendarEvent } from './GoogleCalendarService';

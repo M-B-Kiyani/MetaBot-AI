@@ -23,13 +23,16 @@ export class HubSpotService {
   private isEnabled: boolean;
 
   constructor() {
-    const apiKey = process.env.HUBSPOT_API_KEY || process.env.HUBSPOT_ACCESS_TOKEN;
-    this.isEnabled = !!apiKey;
+    const apiKey =
+      process.env.HUBSPOT_API_KEY || process.env.HUBSPOT_ACCESS_TOKEN;
+    this.isEnabled = process.env.HUBSPOT_ENABLED === 'true' && !!apiKey;
 
     if (this.isEnabled && apiKey) {
       this.client = new Client({ accessToken: apiKey });
     } else {
-      logger.warn('HubSpot API key not provided, CRM integration disabled');
+      logger.warn(
+        'HubSpot API key not provided or disabled, CRM integration disabled'
+      );
       // Create a mock client for when HubSpot is not configured
       this.client = {} as Client;
     }
@@ -50,7 +53,10 @@ export class HubSpotService {
 
       if (existingContact) {
         // Update existing contact
-        const updatedContact = await this.updateContact(existingContact.id, contactData);
+        const updatedContact = await this.updateContact(
+          existingContact.id,
+          contactData
+        );
         logger.info('HubSpot contact updated successfully', {
           contactId: updatedContact.id,
           email: contactData.email,
@@ -70,26 +76,37 @@ export class HubSpotService {
         email: contactData.email,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error(`HubSpot contact operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `HubSpot contact operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Add booking metadata to a contact
    */
-  async addBookingToContact(contactId: string, booking: Booking): Promise<void> {
+  async addBookingToContact(
+    contactId: string,
+    booking: Booking
+  ): Promise<void> {
     if (!this.isEnabled) {
-      logger.warn('HubSpot integration disabled, skipping booking metadata update');
+      logger.warn(
+        'HubSpot integration disabled, skipping booking metadata update'
+      );
       return;
     }
 
     try {
       const bookingProperties: ContactProperties = {
-        last_booking_date: booking.startTime.toISOString().split('T')[0] as string,
+        last_booking_date: booking.startTime
+          .toISOString()
+          .split('T')[0] as string,
         last_booking_duration: booking.duration.toString(),
         last_booking_status: booking.status,
         last_booking_inquiry: booking.inquiry || '',
-        total_bookings: (await this.incrementBookingCount(contactId)).toString(),
+        total_bookings: (
+          await this.incrementBookingCount(contactId)
+        ).toString(),
       };
 
       await this.client.crm.contacts.basicApi.update(contactId, {
@@ -106,14 +123,18 @@ export class HubSpotService {
         bookingId: booking.id,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error(`Failed to update contact with booking metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to update contact with booking metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Find a contact by email address
    */
-  private async findContactByEmail(email: string): Promise<{ id: string } | null> {
+  private async findContactByEmail(
+    email: string
+  ): Promise<{ id: string } | null> {
     try {
       const searchRequest = {
         filterGroups: [
@@ -131,7 +152,8 @@ export class HubSpotService {
         limit: 1,
       };
 
-      const searchResult = await this.client.crm.contacts.searchApi.doSearch(searchRequest);
+      const searchResult =
+        await this.client.crm.contacts.searchApi.doSearch(searchRequest);
 
       if (searchResult.results && searchResult.results.length > 0) {
         const firstResult = searchResult.results[0];
@@ -153,7 +175,9 @@ export class HubSpotService {
   /**
    * Create a new contact
    */
-  private async createContact(contactData: ContactData): Promise<{ id: string }> {
+  private async createContact(
+    contactData: ContactData
+  ): Promise<{ id: string }> {
     const properties: ContactProperties = {
       email: contactData.email,
     };
@@ -164,8 +188,10 @@ export class HubSpotService {
     if (contactData.phone) properties.phone = contactData.phone;
     if (contactData.company) properties.company = contactData.company;
     if (contactData.website) properties.website = contactData.website;
-    if (contactData.lifecyclestage) properties.lifecyclestage = contactData.lifecyclestage;
-    if (contactData.lead_status) properties.lead_status = contactData.lead_status;
+    if (contactData.lifecyclestage)
+      properties.lifecyclestage = contactData.lifecyclestage;
+    if (contactData.lead_status)
+      properties.lead_status = contactData.lead_status;
 
     // Set default lifecycle stage if not provided
     if (!properties.lifecyclestage) {
@@ -176,14 +202,18 @@ export class HubSpotService {
       properties,
     };
 
-    const result = await this.client.crm.contacts.basicApi.create(createRequest);
+    const result =
+      await this.client.crm.contacts.basicApi.create(createRequest);
     return { id: result.id };
   }
 
   /**
    * Update an existing contact
    */
-  private async updateContact(contactId: string, contactData: ContactData): Promise<{ id: string }> {
+  private async updateContact(
+    contactId: string,
+    contactData: ContactData
+  ): Promise<{ id: string }> {
     const properties: ContactProperties = {};
 
     // Only update provided properties
@@ -192,8 +222,10 @@ export class HubSpotService {
     if (contactData.phone) properties.phone = contactData.phone;
     if (contactData.company) properties.company = contactData.company;
     if (contactData.website) properties.website = contactData.website;
-    if (contactData.lifecyclestage) properties.lifecyclestage = contactData.lifecyclestage;
-    if (contactData.lead_status) properties.lead_status = contactData.lead_status;
+    if (contactData.lifecyclestage)
+      properties.lifecyclestage = contactData.lifecyclestage;
+    if (contactData.lead_status)
+      properties.lead_status = contactData.lead_status;
 
     const updateRequest = {
       properties,
@@ -209,8 +241,13 @@ export class HubSpotService {
   private async incrementBookingCount(contactId: string): Promise<number> {
     try {
       // Get current booking count
-      const contact = await this.client.crm.contacts.basicApi.getById(contactId, ['total_bookings']);
-      const currentCount = contact.properties?.total_bookings ? parseInt(contact.properties.total_bookings as string, 10) : 0;
+      const contact = await this.client.crm.contacts.basicApi.getById(
+        contactId,
+        ['total_bookings']
+      );
+      const currentCount = contact.properties?.total_bookings
+        ? parseInt(contact.properties.total_bookings as string, 10)
+        : 0;
       const newCount = currentCount + 1;
 
       return newCount;
@@ -227,9 +264,13 @@ export class HubSpotService {
    * Extract contact data from booking information
    */
   static extractContactDataFromBooking(booking: Booking): ContactData {
-    const nameParts = booking.name.trim().split(' ').filter(part => part.length > 0);
+    const nameParts = booking.name
+      .trim()
+      .split(' ')
+      .filter((part) => part.length > 0);
     const firstname = nameParts[0] || undefined;
-    const lastname = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
+    const lastname =
+      nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
     const result: ContactData = {
       email: booking.email,

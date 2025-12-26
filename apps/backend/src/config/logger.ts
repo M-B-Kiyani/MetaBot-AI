@@ -1,7 +1,8 @@
 import * as winston from 'winston';
 import { config } from './environment';
 
-const logLevel = config.NODE_ENV === 'production' ? 'info' : 'debug';
+const logLevel =
+  process.env.LOG_LEVEL || config.NODE_ENV === 'production' ? 'info' : 'debug';
 
 export const logger = winston.createLogger({
   level: logLevel,
@@ -21,7 +22,23 @@ export const logger = winston.createLogger({
   ],
 });
 
-if (config.NODE_ENV === 'production') {
-  logger.add(new winston.transports.File({ filename: 'error.log', level: 'error' }));
-  logger.add(new winston.transports.File({ filename: 'combined.log' }));
+if (
+  config.NODE_ENV === 'production' &&
+  process.env.LOG_ENABLE_FILE !== 'false'
+) {
+  logger.add(
+    new winston.transports.File({
+      filename: 'error.log',
+      level: 'error',
+      maxsize: process.env.LOG_MAX_FILE_SIZE || '20m',
+      maxFiles: process.env.LOG_MAX_FILES || '14d',
+    })
+  );
+  logger.add(
+    new winston.transports.File({
+      filename: 'combined.log',
+      maxsize: process.env.LOG_MAX_FILE_SIZE || '20m',
+      maxFiles: process.env.LOG_MAX_FILES || '14d',
+    })
+  );
 }

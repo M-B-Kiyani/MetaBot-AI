@@ -30,14 +30,24 @@ export class GoogleCalendarService {
   constructor() {
     // Initialize Google Calendar API client
     let auth;
-    
+
     if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-      // Use direct service account key from environment
-      const serviceAccountKey = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
-      auth = new google.auth.GoogleAuth({
-        credentials: serviceAccountKey,
-        scopes: ['https://www.googleapis.com/auth/calendar'],
-      });
+      try {
+        // Use direct service account key from environment
+        const serviceAccountKey = JSON.parse(
+          process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+        );
+        auth = new google.auth.GoogleAuth({
+          credentials: serviceAccountKey,
+          scopes: ['https://www.googleapis.com/auth/calendar'],
+        });
+      } catch (error) {
+        logger.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY', { error });
+        // Fallback to no authentication
+        auth = new google.auth.GoogleAuth({
+          scopes: ['https://www.googleapis.com/auth/calendar'],
+        });
+      }
     } else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE) {
       // Use service account key file
       auth = new google.auth.GoogleAuth({
@@ -53,20 +63,29 @@ export class GoogleCalendarService {
 
     this.calendar = google.calendar({ version: 'v3', auth });
     this.calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
-    this.timeZone = process.env.TIMEZONE || process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/New_York';
+    this.timeZone =
+      process.env.BUSINESS_TIMEZONE ||
+      process.env.GOOGLE_CALENDAR_TIMEZONE ||
+      'Europe/London';
 
     // Initialize rate limiter with exponential backoff
     // Google Calendar API allows 1000 requests per 100 seconds per user
     // We'll be conservative with 5 requests per second
     this.limiter = new Bottleneck({
-      minTime: 200, // 200ms between requests (5 requests/second)
+      minTime: parseInt(process.env.GOOGLE_CALENDAR_MIN_TIME || '200'), // 200ms between requests (5 requests/second)
       maxConcurrent: 1,
-      reservoir: 100, // Initial reservoir
-      reservoirRefreshAmount: 100,
-      reservoirRefreshInterval: 20 * 1000, // Refresh every 20 seconds
-      retryCount: 3,
+      reservoir: parseInt(process.env.GOOGLE_CALENDAR_RESERVOIR || '100'), // Initial reservoir
+      reservoirRefreshAmount: parseInt(
+        process.env.GOOGLE_CALENDAR_RESERVOIR || '100'
+      ),
+      reservoirRefreshInterval: parseInt(
+        process.env.GOOGLE_CALENDAR_REFRESH_INTERVAL || '20000'
+      ), // Refresh every 20 seconds
+      retryCount: parseInt(process.env.GOOGLE_CALENDAR_RETRY_ATTEMPTS || '3'),
       retryDelayMultiplier: 2, // Exponential backoff
-      retryDelayBase: 1000, // Start with 1 second delay
+      retryDelayBase: parseInt(
+        process.env.GOOGLE_CALENDAR_RETRY_DELAY || '1000'
+      ), // Start with 1 second delay
     });
 
     // Log rate limiter events
@@ -91,7 +110,7 @@ export class GoogleCalendarService {
   async createEvent(booking: Booking): Promise<string> {
     try {
       const event = this.buildCalendarEvent(booking);
-      
+
       const response = await this.limiter.schedule(() =>
         this.calendar.events.insert({
           calendarId: this.calendarId,
@@ -102,7 +121,9 @@ export class GoogleCalendarService {
 
       const eventId = response.data.id;
       if (!eventId) {
-        throw new Error('Failed to create calendar event: No event ID returned');
+        throw new Error(
+          'Failed to create calendar event: No event ID returned'
+        );
       }
 
       logger.info('Calendar event created successfully', {
@@ -117,7 +138,9 @@ export class GoogleCalendarService {
         bookingId: booking.id,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error(`Calendar event creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Calendar event creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -148,7 +171,9 @@ export class GoogleCalendarService {
         eventId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error(`Calendar event update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Calendar event update failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -173,7 +198,9 @@ export class GoogleCalendarService {
         eventId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error(`Calendar event deletion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Calendar event deletion failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -212,7 +239,7 @@ export class GoogleCalendarService {
       }
 
       if (event.attendees) {
-        result.attendees = event.attendees.map(attendee => {
+        result.attendees = event.attendees.map((attendee) => {
           const attendeeResult: { email: string; displayName?: string } = {
             email: attendee.email || '',
           };
@@ -238,11 +265,15 @@ export class GoogleCalendarService {
    */
   private buildCalendarEvent(booking: Booking): calendar_v3.Schema$Event {
     const startTime = new Date(booking.startTime);
-    const endTime = new Date(startTime.getTime() + booking.duration * 60 * 1000);
+    const endTime = new Date(
+      startTime.getTime() + booking.duration * 60 * 1000
+    );
 
     const event: calendar_v3.Schema$Event = {
       summary: `Appointment with ${booking.name}`,
-      description: booking.inquiry ? `Inquiry: ${booking.inquiry}` : 'Scheduled appointment',
+      description: booking.inquiry
+        ? `Inquiry: ${booking.inquiry}`
+        : 'Scheduled appointment',
       start: {
         dateTime: startTime.toISOString(),
         timeZone: this.timeZone,
@@ -274,7 +305,8 @@ export class GoogleCalendarService {
    */
   isConfigured(): boolean {
     return !!(
-      (process.env.GOOGLE_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE) &&
+      (process.env.GOOGLE_SERVICE_ACCOUNT_KEY ||
+        process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE) &&
       process.env.GOOGLE_CALENDAR_ID
     );
   }

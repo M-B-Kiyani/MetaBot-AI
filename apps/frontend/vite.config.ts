@@ -10,16 +10,16 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: parseInt(process.env.FRONTEND_PORT || '3000'),
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: process.env.API_BASE_URL || 'http://localhost:3000',
         changeOrigin: true,
       },
     },
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
   },
 });

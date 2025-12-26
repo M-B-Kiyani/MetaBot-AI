@@ -10,11 +10,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3002,
+    port: parseInt(process.env.WIDGET_PORT || '3002'),
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
     lib: {
       entry: path.resolve(__dirname, 'src/widget.tsx'),
       name: 'AIBookingWidget',

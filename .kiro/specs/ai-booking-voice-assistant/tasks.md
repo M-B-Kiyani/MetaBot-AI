@@ -115,7 +115,7 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
 - [x] 5. Checkpoint - Core booking system functional
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 6. Implement AI services and RAG capabilities
+- [x] 6. Implement AI services and RAG capabilities
   - [x] 6.1 Create KnowledgeService for document management
     - Implement document embedding using vector similarity
     - Create simple vector search functionality
@@ -153,14 +153,14 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - **Property 11: RAG Knowledge Integration**
     - **Validates: Requirements 5.3, 6.1, 6.3, 6.5**
 
-- [ ] 7. Implement voice assistant integration
-  - [ ] 7.1 Create RetellService for webhook processing
+- [x] 7. Implement voice assistant integration
+  - [x] 7.1 Create RetellService for webhook processing
     - Implement Retell AI webhook signature verification
     - Add webhook payload parsing and validation
     - Create voice function call extraction from transcripts
     - _Requirements: 4.1, 4.2_
 
-  - [ ] 7.2 Create VoiceService for voice interactions
+  - [x] 7.2 Create VoiceService for voice interactions
     - Implement voice booking request processing
     - Integrate with BookingService for appointment creation
     - Add spoken confirmation response generation
@@ -171,7 +171,7 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - **Property 7: Voice Webhook Processing**
     - **Validates: Requirements 4.1, 4.2**
 
-  - [ ] 7.4 Write property test for voice booking integration
+  - [x] 7.4 Write property test for voice booking integration
     - **Property 8: Voice Booking Integration**
     - **Validates: Requirements 4.3, 4.4**
 
