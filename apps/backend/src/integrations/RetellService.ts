@@ -10,14 +10,52 @@ export interface RetellService {
   verifyWebhook(signature: string, payload: string): boolean;
   parseWebhookPayload(payload: string): RetellWebhookPayload;
   parseVoiceFunction(transcript: string): VoiceFunctionCall | null;
+  initiateCall(config: CallInitiationConfig): Promise<CallResponse>;
+  getCallStatus(callId: string): Promise<CallStatusResponse>;
+}
+
+export interface CallInitiationConfig {
+  agent_id: string;
+  to_number: string;
+  from_number?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface CallResponse {
+  call_id: string;
+  call_status: string;
+  agent_id: string;
+  to_number: string;
+  from_number?: string;
+}
+
+export interface CallStatusResponse {
+  call_id: string;
+  call_status: string;
+  agent_id: string;
+  to_number: string;
+  from_number?: string;
+  start_timestamp?: number;
+  end_timestamp?: number;
+  metadata?: Record<string, any>;
 }
 
 export class RetellServiceImpl implements RetellService {
   private readonly webhookSecret: string;
+  private readonly apiKey: string;
+  private readonly baseUrl: string = 'https://api.retellai.com';
 
-  constructor(webhookSecret?: string) {
+  constructor(apiKey?: string, webhookSecret?: string) {
+    this.apiKey = apiKey || process.env.RETELL_API_KEY || '';
     this.webhookSecret =
       webhookSecret || process.env.RETELL_WEBHOOK_SECRET || '';
+
+    if (!this.apiKey && process.env.RETELL_ENABLED === 'true') {
+      logger.warn(
+        'RETELL_API_KEY environment variable not provided but Retell is enabled'
+      );
+    }
+
     if (!this.webhookSecret && process.env.RETELL_ENABLED === 'true') {
       logger.warn(
         'RETELL_WEBHOOK_SECRET environment variable not provided but Retell is enabled'

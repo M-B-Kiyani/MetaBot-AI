@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './ui';
+import { VoiceButton } from './VoiceButton';
+import { VoiceCallModal } from './VoiceCallModal';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -13,6 +15,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   placeholder = 'Type your message...',
 }) => {
   const [message, setMessage] = useState('');
+  const [showVoiceCallModal, setShowVoiceCallModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,6 +47,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const handleVoiceInput = (transcript: string) => {
+    setMessage(transcript);
+    // Auto-focus textarea after voice input
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
+  const handleVoiceCall = () => {
+    setShowVoiceCallModal(true);
+  };
+
   useEffect(() => {
     // Focus input on mount
     if (textareaRef.current) {
@@ -52,28 +67,42 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, []);
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex items-end space-x-3 p-4 bg-white border-t border-gray-200"
-    >
-      <div className="flex-1">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          placeholder={placeholder}
+    <>
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-end space-x-3 p-4 bg-white border-t border-gray-200"
+      >
+        <div className="flex-1">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={1}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none max-h-32 overflow-y-auto"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Press Enter to send, Shift+Enter for new line
+          </p>
+        </div>
+
+        <VoiceButton
+          onVoiceInput={handleVoiceInput}
+          onVoiceCall={handleVoiceCall}
           disabled={disabled}
-          rows={1}
-          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none max-h-32 overflow-y-auto"
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Press Enter to send, Shift+Enter for new line
-        </p>
-      </div>
-      <Button type="submit" disabled={!message.trim() || disabled} size="sm">
-        Send
-      </Button>
-    </form>
+
+        <Button type="submit" disabled={!message.trim() || disabled} size="sm">
+          Send
+        </Button>
+      </form>
+
+      <VoiceCallModal
+        isOpen={showVoiceCallModal}
+        onClose={() => setShowVoiceCallModal(false)}
+      />
+    </>
   );
 };

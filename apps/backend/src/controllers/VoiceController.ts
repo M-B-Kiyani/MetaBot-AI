@@ -69,6 +69,26 @@ const RetellWebhookSchema = z.object({
   retell_llm_dynamic_variables: z.record(z.any()).optional(),
 });
 
+// Voice call initiation schema
+const InitiateCallSchema = z.object({
+  agentId: z.string(),
+  phoneNumber: z
+    .string()
+    .regex(/^\+[1-9]\d{1,14}$/, 'Invalid phone number format'),
+  metadata: z.record(z.any()).optional(),
+});
+
+// Call status response schema
+const CallStatusSchema = z.object({
+  callId: z.string(),
+  status: z.string(),
+  phoneNumber: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  duration: z.number().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
 export class VoiceController {
   constructor(
     private voiceService: VoiceService,
@@ -173,6 +193,109 @@ export class VoiceController {
           'SERVICE_UNAVAILABLE',
           'Voice service health check failed'
         )
+      );
+    }
+  };
+
+  // Initiate a voice call
+  initiateCall = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Validate request body
+      const validationResult = InitiateCallSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        logger.warn('Invalid call initiation request', {
+          errors: validationResult.error.errors,
+          body: req.body,
+        });
+        return next(
+          new AppError(
+            400,
+            'INVALID_REQUEST',
+            'Invalid request: ' +
+              validationResult.error.errors.map((e) => e.message).join(', ')
+          )
+        );
+      }
+
+      const { agentId, phoneNumber, metadata } = validationResult.data;
+
+      logger.info('Initiating voice call', {
+        agentId,
+        phoneNumber: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Mask phone number for logging
+        metadata,
+      });
+
+      // Initiate call through Retell service
+      const callResponse = await this.retellService.initiateCall({
+        agent_id: agentId,
+        to_number: phoneNumber,
+        metadata: metadata || {},
+      });
+
+      logger.info('Voice call initiated successfully', {
+        callId: callResponse.call_id,
+        status: callResponse.call_status,
+      });
+
+      res.json({
+        callId: callResponse.call_id,
+        status: callResponse.call_status,
+        phoneNumber: phoneNumber,
+        message: 'Call initiated successfully',
+      });
+    } catch (error) {
+      logger.error('Error initiating voice call:', error);
+      next(
+        new AppError(
+          500,
+          'CALL_INITIATION_FAILED',
+          'Failed to initiate voice call'
+        )
+      );
+    }
+  };
+
+  // Get call status
+  getCallStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { callId } = req.params;
+
+      if (!callId) {
+        return next(
+          new AppError(400, 'MISSING_CALL_ID', 'Call ID is required')
+        );
+      }
+
+      logger.info('Getting call status', { callId });
+
+      // Get call status from Retell service
+      const callStatus = await this.retellService.getCallStatus(callId);
+
+      logger.info('Call status retrieved', {
+        callId,
+        status: callStatus.call_status,
+      });
+
+      res.json({
+        callId: callStatus.call_id,
+        status: callStatus.call_status,
+        phoneNumber: callStatus.to_number,
+        startTime: callStatus.start_timestamp
+          ? new Date(callStatus.start_timestamp * 1000).toISOString()
+          : undefined,
+        endTime: callStatus.end_timestamp
+          ? new Date(callStatus.end_timestamp * 1000).toISOString()
+          : undefined,
+        duration:
+          callStatus.end_timestamp && callStatus.start_timestamp
+            ? callStatus.end_timestamp - callStatus.start_timestamp
+            : undefined,
+        metadata: callStatus.metadata,
+      });
+    } catch (error) {
+      logger.error('Error getting call status:', error);
+      next(
+        new AppError(500, 'CALL_STATUS_FAILED', 'Failed to get call status')
       );
     }
   };

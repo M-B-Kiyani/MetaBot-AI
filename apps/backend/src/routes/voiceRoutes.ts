@@ -28,4 +28,8 @@ const voiceController = new VoiceController(voiceService, retellService);
 router.post('/webhook', voiceController.handleWebhook);
 router.get('/health', voiceController.healthCheck);
 
+// Voice call management routes
+router.post('/call', voiceController.initiateCall);
+router.get('/call/:callId/status', voiceController.getCallStatus);
+
 export default router;
