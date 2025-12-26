@@ -1,0 +1,50 @@
+# Nixpacks configuration for Railway deployment
+# This file configures how Railway builds and deploys the AI Booking Voice Assistant
+
+[variables]
+NODE_VERSION = "18"
+NPM_VERSION = "9"
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "npm-9_x", "python3", "gcc", "pkg-config"]
+
+[phases.install]
+cmds = [
+    "npm install -g pnpm@8",
+    "pnpm install --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+    # Generate Prisma client
+    "cd apps/backend && npx prisma generate",
+    
+    # Build shared package first
+    "cd packages/shared && pnpm build",
+    
+    # Build backend
+    "cd apps/backend && pnpm build",
+    
+    # Build frontend
+    "cd apps/frontend && pnpm build",
+    
+    # Build widget
+    "cd apps/widget && pnpm build"
+]
+
+# Default start command (can be overridden per service)
+[start]
+cmd = "cd apps/backend && pnpm start"
+
+# Service-specific configurations
+[services.backend]
+build = "cd apps/backend && pnpm build"
+start = "cd apps/backend && pnpm start"
+
+[services.frontend]
+build = "cd apps/frontend && pnpm build"
+start = "cd apps/frontend && pnpm preview --host 0.0.0.0 --port $PORT"
+
+[services.widget]
+build = "cd apps/widget && pnpm build"
+start = "cd apps/widget && pnpm preview --host 0.0.0.0 --port $PORT"
