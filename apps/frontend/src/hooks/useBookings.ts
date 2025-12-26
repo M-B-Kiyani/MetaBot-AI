@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CreateBookingRequest, BookingResponse } from '@ai-booking/shared';
 import { apiService } from '../services/api';
 import { useAppContext } from '../contexts/AppContext';

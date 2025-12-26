@@ -7,7 +7,7 @@ dotenv.config({ path: '.env.test' });
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test_db';
-process.env.PORT = '3001';
+process.env.PORT = '3000';
 
 // Initialize logger for tests - suppress logs during testing
 process.env.LOG_LEVEL = 'error';

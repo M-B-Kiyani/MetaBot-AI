@@ -8,7 +8,11 @@ interface WidgetProps {
   position?: 'bottom-right' | 'bottom-left';
 }
 
-function Widget({ apiUrl = 'http://localhost:3001', theme = 'light', position = 'bottom-right' }: WidgetProps): JSX.Element {
+function Widget({
+  apiUrl = 'http://localhost:3000',
+  theme = 'light',
+  position = 'bottom-right',
+}: WidgetProps): JSX.Element {
   const [isOpen, setIsOpen] = React.useState(false);
 
   const positionClasses = {
@@ -24,7 +28,9 @@ function Widget({ apiUrl = 'http://localhost:3001', theme = 'light', position = 
   return (
     <div className={`fixed ${positionClasses[position]} z-50`}>
       {isOpen && (
-        <div className={`mb-4 w-80 h-96 rounded-lg shadow-lg border ${themeClasses[theme]} p-4`}>
+        <div
+          className={`mb-4 w-80 h-96 rounded-lg shadow-lg border ${themeClasses[theme]} p-4`}
+        >
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">AI Booking Assistant</h3>
             <button

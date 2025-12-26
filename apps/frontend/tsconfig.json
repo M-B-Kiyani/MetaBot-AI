@@ -12,10 +12,11 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "composite": false
+    "composite": false,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vite/client"]
   },
-  "include": ["src"],
-  "references": [
-    { "path": "../../packages/shared" }
-  ]
+  "include": ["src", "vite-env.d.ts"],
+  "references": [{ "path": "../../packages/shared" }]
 }

@@ -13,7 +13,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@ai-booking/shared": "workspace:*",
+    "@ai-booking/shared": "file:../../packages/shared",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",

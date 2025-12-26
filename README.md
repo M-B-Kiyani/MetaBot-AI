@@ -48,22 +48,26 @@ This project follows a monorepo structure with Clean Architecture principles:
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 2. Set up environment variables:
+
 ```bash
 cp apps/backend/.env.example apps/backend/.env
 # Edit .env with your configuration
 ```
 
 3. Generate Prisma client:
+
 ```bash
 pnpm run db:generate
 ```
 
 4. Run database migrations:
+
 ```bash
 pnpm run db:migrate
 ```
@@ -71,23 +75,27 @@ pnpm run db:migrate
 ### Development
 
 Start all applications in development mode:
+
 ```bash
 pnpm run dev
 ```
 
 This will start:
-- Backend API on http://localhost:3001
+
+- Backend API on http://localhost:3000
 - Frontend app on http://localhost:3000
 - Widget on http://localhost:3002
 
 ### Testing
 
 Run all tests:
+
 ```bash
 pnpm run test
 ```
 
 Run property-based tests:
+
 ```bash
 pnpm run test -- --testPathPattern=property.test.ts
 ```
@@ -95,6 +103,7 @@ pnpm run test -- --testPathPattern=property.test.ts
 ### Building
 
 Build all applications:
+
 ```bash
 pnpm run build
 ```
@@ -102,6 +111,7 @@ pnpm run build
 ## Project Structure
 
 ### Backend (`apps/backend/`)
+
 - Express.js API server with TypeScript
 - Clean Architecture: Controllers → Services → Repositories
 - Prisma ORM for database operations
@@ -109,18 +119,21 @@ pnpm run build
 - Rate limiting and security middleware
 
 ### Frontend (`apps/frontend/`)
+
 - React 18 application with TypeScript
 - TailwindCSS for styling
 - Vite for fast development and building
 - React Router for navigation
 
 ### Widget (`apps/widget/`)
+
 - Embeddable React widget
 - Shadow DOM for CSS isolation
 - Independent operation when embedded
 - Support for iframe and script tag embedding
 
 ### Shared (`packages/shared/`)
+
 - Common TypeScript types and interfaces
 - Zod schemas for validation
 - Shared constants and enums
@@ -138,6 +151,7 @@ The system integrates with several external services:
 ## Deployment
 
 The application is designed for deployment on Railway with separate services for:
+
 - Backend API
 - Frontend application
 - Widget distribution
