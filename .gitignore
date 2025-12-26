@@ -97,3 +97,10 @@ Thumbs.db
 # Prisma
 prisma/migrations/
 !prisma/migrations/.gitkeep
+
+# Service account credentials and secrets
+*.json
+!package*.json
+!tsconfig*.json
+!jest.config.js
+metalogics-chatbot.json
