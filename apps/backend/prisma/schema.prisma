@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  name               String
+  email              String
+  phone              String?
+  inquiry            String?
+  startTime          DateTime
+  duration           Int           // minutes
+  status             BookingStatus @default(PENDING)
+  confirmationSent   Boolean       @default(false)
+  reminderSent       Boolean       @default(false)
+  calendarEventId    String?
+  crmContactId       String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([startTime])
+  @@index([email])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+  COMPLETED
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  embedding Float[]  // Vector embedding
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}
