@@ -14,7 +14,7 @@ describe('Environment Validation Property Tests', () => {
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
-    
+
     // Clear module cache to ensure fresh imports
     jest.resetModules();
   });
@@ -32,11 +32,22 @@ describe('Environment Validation Property Tests', () => {
             validVars: fc.record({
               NODE_ENV: fc.constantFrom('development', 'production', 'test'),
               PORT: fc.integer({ min: 1000, max: 9999 }).map(String),
-              GOOGLE_SERVICE_ACCOUNT_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
-              GOOGLE_CALENDAR_ID: fc.option(fc.string({ minLength: 5 }), { nil: undefined }),
-              HUBSPOT_API_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
-              RETELL_API_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
-              GEMINI_API_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
+              GOOGLE_SERVICE_ACCOUNT_KEY: fc.option(
+                fc.string({ minLength: 10 }),
+                { nil: undefined }
+              ),
+              GOOGLE_CALENDAR_ID: fc.option(fc.string({ minLength: 5 }), {
+                nil: undefined,
+              }),
+              HUBSPOT_API_KEY: fc.option(fc.string({ minLength: 10 }), {
+                nil: undefined,
+              }),
+              RETELL_API_KEY: fc.option(fc.string({ minLength: 10 }), {
+                nil: undefined,
+              }),
+              GEMINI_API_KEY: fc.option(fc.string({ minLength: 10 }), {
+                nil: undefined,
+              }),
               ALLOWED_ORIGINS: fc.option(fc.string(), { nil: undefined }),
             }),
           }),
@@ -49,26 +60,30 @@ describe('Environment Validation Property Tests', () => {
             });
 
             // Remove the missing variables
-            missingVars.forEach(varName => {
+            missingVars.forEach((varName) => {
               delete process.env[varName];
             });
 
             // Mock console.error and process.exit
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-            const exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
-              throw new Error(`Process exit called with code: ${code}`);
-            });
+            const consoleSpy = jest
+              .spyOn(console, 'error')
+              .mockImplementation();
+            const exitSpy = jest
+              .spyOn(process, 'exit')
+              .mockImplementation((code?: number) => {
+                throw new Error(`Process exit called with code: ${code}`);
+              });
 
             try {
               // Try to import the environment config (this should trigger validation)
               await import('../config/environment');
-              
+
               // If we get here, validation didn't fail as expected
-              expect(true).toBe(false); // Force failure
+              expect(exitSpy).toHaveBeenCalledWith(1);
             } catch (error: any) {
               // Should have called process.exit(1)
-              expect(error.message).toContain('Process exit called with code: 1');
-              
+              expect(exitSpy).toHaveBeenCalledWith(1);
+
               // Should have logged an error
               expect(consoleSpy).toHaveBeenCalledWith(
                 'Environment validation failed:',
@@ -90,12 +105,25 @@ describe('Environment Validation Property Tests', () => {
           fc.record({
             NODE_ENV: fc.constantFrom('development', 'production', 'test'),
             PORT: fc.integer({ min: 1000, max: 9999 }),
-            DATABASE_URL: fc.string({ minLength: 20 }).map(url => `postgresql://user:pass@localhost:5432/${url}`),
-            GOOGLE_SERVICE_ACCOUNT_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
-            GOOGLE_CALENDAR_ID: fc.option(fc.string({ minLength: 5 }), { nil: undefined }),
-            HUBSPOT_API_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
-            RETELL_API_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
-            GEMINI_API_KEY: fc.option(fc.string({ minLength: 10 }), { nil: undefined }),
+            DATABASE_URL: fc
+              .string({ minLength: 20 })
+              .map((url) => `postgresql://user:pass@localhost:5432/${url}`),
+            GOOGLE_SERVICE_ACCOUNT_KEY: fc.option(
+              fc.string({ minLength: 10 }),
+              { nil: undefined }
+            ),
+            GOOGLE_CALENDAR_ID: fc.option(fc.string({ minLength: 5 }), {
+              nil: undefined,
+            }),
+            HUBSPOT_API_KEY: fc.option(fc.string({ minLength: 10 }), {
+              nil: undefined,
+            }),
+            RETELL_API_KEY: fc.option(fc.string({ minLength: 10 }), {
+              nil: undefined,
+            }),
+            GEMINI_API_KEY: fc.option(fc.string({ minLength: 10 }), {
+              nil: undefined,
+            }),
             ALLOWED_ORIGINS: fc.option(fc.string(), { nil: undefined }),
           }),
           async (envVars) => {
@@ -107,12 +135,15 @@ describe('Environment Validation Property Tests', () => {
             });
 
             // Mock console.error and process.exit to ensure they're not called
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest
+              .spyOn(console, 'error')
+              .mockImplementation();
             const exitSpy = jest.spyOn(process, 'exit').mockImplementation();
 
             try {
               // Import the environment config
-              const { config, isDevelopment, isProduction, isTest } = await import('../config/environment');
+              const { config, isDevelopment, isProduction, isTest } =
+                await import('../config/environment');
 
               // Should not have called console.error or process.exit
               expect(consoleSpy).not.toHaveBeenCalled();
@@ -121,12 +152,14 @@ describe('Environment Validation Property Tests', () => {
               // Verify configuration values are accessible and correct
               expect(config).toBeDefined();
               expect(config.NODE_ENV).toBe(envVars.NODE_ENV);
-              expect(config.PORT).toBe(envVars.PORT);
+              expect(config.PORT).toBe(Number(envVars.PORT));
               expect(config.DATABASE_URL).toBe(envVars.DATABASE_URL);
 
               // Verify optional values
               if (envVars.GOOGLE_SERVICE_ACCOUNT_KEY) {
-                expect(config.GOOGLE_SERVICE_ACCOUNT_KEY).toBe(envVars.GOOGLE_SERVICE_ACCOUNT_KEY);
+                expect(config.GOOGLE_SERVICE_ACCOUNT_KEY).toBe(
+                  envVars.GOOGLE_SERVICE_ACCOUNT_KEY
+                );
               }
               if (envVars.HUBSPOT_API_KEY) {
                 expect(config.HUBSPOT_API_KEY).toBe(envVars.HUBSPOT_API_KEY);
@@ -136,7 +169,6 @@ describe('Environment Validation Property Tests', () => {
               expect(isDevelopment).toBe(envVars.NODE_ENV === 'development');
               expect(isProduction).toBe(envVars.NODE_ENV === 'production');
               expect(isTest).toBe(envVars.NODE_ENV === 'test');
-
             } catch (error) {
               // Should not throw any errors with valid configuration
               expect(error).toBeUndefined();
@@ -162,7 +194,8 @@ describe('Environment Validation Property Tests', () => {
           }),
           async ({ invalidScenario }) => {
             // Set up base valid environment
-            process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/testdb';
+            process.env.DATABASE_URL =
+              'postgresql://user:pass@localhost:5432/testdb';
             process.env.NODE_ENV = 'development';
             process.env.PORT = '3000';
 
@@ -180,21 +213,27 @@ describe('Environment Validation Property Tests', () => {
             }
 
             // Mock console.error and process.exit
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-            const exitSpy = jest.spyOn(process, 'exit').mockImplementation((code?: number) => {
-              throw new Error(`Process exit called with code: ${code}`);
-            });
+            const consoleSpy = jest
+              .spyOn(console, 'error')
+              .mockImplementation();
+            const exitSpy = jest
+              .spyOn(process, 'exit')
+              .mockImplementation((code?: number) => {
+                throw new Error(`Process exit called with code: ${code}`);
+              });
 
             try {
               // Try to import the environment config
               await import('../config/environment');
-              
+
               // If we get here, validation didn't fail as expected
               expect(true).toBe(false); // Force failure
             } catch (error: any) {
               // Should have called process.exit(1)
-              expect(error.message).toContain('Process exit called with code: 1');
-              
+              expect(error.message).toContain(
+                'Process exit called with code: 1'
+              );
+
               // Should have logged a descriptive error
               expect(consoleSpy).toHaveBeenCalledWith(
                 'Environment validation failed:',
@@ -226,7 +265,9 @@ describe('Environment Validation Property Tests', () => {
       expect(config2).toEqual(config3);
       expect(config1.NODE_ENV).toBe('development');
       expect(config1.PORT).toBe(3000);
-      expect(config1.DATABASE_URL).toBe('postgresql://user:pass@localhost:5432/testdb');
+      expect(config1.DATABASE_URL).toBe(
+        'postgresql://user:pass@localhost:5432/testdb'
+      );
     });
   });
 });

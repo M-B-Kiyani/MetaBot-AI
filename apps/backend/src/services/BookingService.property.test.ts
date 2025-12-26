@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import * as fc from 'fast-check';
 import { BookingServiceImpl } from './BookingService';
 import { BookingRepository } from '../repositories/BookingRepository';
-import { CreateBookingRequest, BookingDurations } from '../../../../packages/shared/src/types/booking';
+import {
+  CreateBookingRequest,
+  BookingDurations,
+} from '../../../../packages/shared/src/types/booking';
 
 // Feature: ai-booking-voice-assistant, Property 3: Valid Duration Enforcement
 // **Validates: Requirements 1.5**
@@ -32,11 +35,13 @@ describe('BookingService Property Tests', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.record({
-          name: fc.string({ minLength: 1, maxLength: 100 }),
+          name: fc
+            .string({ minLength: 1, maxLength: 100 })
+            .filter((s) => s.trim().length > 0),
           email: fc.emailAddress(),
-          startTime: fc.date({ 
+          startTime: fc.date({
             min: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // Next year
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Next year
           }),
           duration: fc.integer({ min: 1, max: 300 }), // Wide range of durations
         }),
@@ -44,9 +49,12 @@ describe('BookingService Property Tests', () => {
           // Ensure start time is during business hours (Monday-Friday, 9 AM - 5 PM)
           const businessStartTime = new Date(startTime);
           businessStartTime.setHours(10, 0, 0, 0); // 10 AM to avoid edge cases
-          
+
           // Set to a weekday if it's a weekend
-          while (businessStartTime.getDay() === 0 || businessStartTime.getDay() === 6) {
+          while (
+            businessStartTime.getDay() === 0 ||
+            businessStartTime.getDay() === 6
+          ) {
             businessStartTime.setDate(businessStartTime.getDate() + 1);
           }
 
@@ -84,9 +92,9 @@ describe('BookingService Property Tests', () => {
             expect(mockRepository.create).toHaveBeenCalledWith(bookingRequest);
           } else {
             // Invalid duration should be rejected
-            await expect(bookingService.createBooking(bookingRequest)).rejects.toThrow(
-              /Invalid duration/
-            );
+            await expect(
+              bookingService.createBooking(bookingRequest)
+            ).rejects.toThrow(/Invalid duration/);
             expect(mockRepository.create).not.toHaveBeenCalled();
           }
         }
@@ -100,21 +108,24 @@ describe('BookingService Property Tests', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.record({
-          startTime: fc.date({ 
+          startTime: fc.date({
             min: new Date(Date.now() + 24 * 60 * 60 * 1000),
-            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           }),
           duration: fc.integer({ min: 1, max: 300 }),
         }),
         async ({ startTime, duration }) => {
           // Reset all mocks before each test
           jest.clearAllMocks();
-          
+
           // Ensure start time is during business hours
           const businessStartTime = new Date(startTime);
           businessStartTime.setHours(10, 0, 0, 0);
-          
-          while (businessStartTime.getDay() === 0 || businessStartTime.getDay() === 6) {
+
+          while (
+            businessStartTime.getDay() === 0 ||
+            businessStartTime.getDay() === 6
+          ) {
             businessStartTime.setDate(businessStartTime.getDate() + 1);
           }
 
@@ -123,14 +134,20 @@ describe('BookingService Property Tests', () => {
           if (isValidDuration) {
             // Valid duration should proceed to repository check
             mockRepository.checkAvailability.mockResolvedValue(true);
-            const result = await bookingService.checkAvailability(businessStartTime, duration);
+            const result = await bookingService.checkAvailability(
+              businessStartTime,
+              duration
+            );
             expect(result).toBe(true);
-            expect(mockRepository.checkAvailability).toHaveBeenCalledWith(businessStartTime, duration);
+            expect(mockRepository.checkAvailability).toHaveBeenCalledWith(
+              businessStartTime,
+              duration
+            );
           } else {
             // Invalid duration should throw error before repository call
-            await expect(bookingService.checkAvailability(businessStartTime, duration)).rejects.toThrow(
-              /Invalid duration/
-            );
+            await expect(
+              bookingService.checkAvailability(businessStartTime, duration)
+            ).rejects.toThrow(/Invalid duration/);
             expect(mockRepository.checkAvailability).not.toHaveBeenCalled();
           }
         }
@@ -146,8 +163,20 @@ describe('BookingService Property Tests', () => {
       fc.asyncProperty(
         fc.record({
           bookingId: fc.string({ minLength: 1, maxLength: 50 }),
-          currentStatus: fc.constantFrom('PENDING', 'CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED'),
-          newStatus: fc.constantFrom('PENDING', 'CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED'),
+          currentStatus: fc.constantFrom(
+            'PENDING',
+            'CONFIRMED',
+            'CANCELLED',
+            'NO_SHOW',
+            'COMPLETED'
+          ),
+          newStatus: fc.constantFrom(
+            'PENDING',
+            'CONFIRMED',
+            'CANCELLED',
+            'NO_SHOW',
+            'COMPLETED'
+          ),
         }),
         async ({ bookingId, currentStatus, newStatus }) => {
           // Mock existing booking with current status
@@ -172,28 +201,35 @@ describe('BookingService Property Tests', () => {
 
           // Define valid transitions according to the state machine
           const validTransitions: Record<string, string[]> = {
-            'PENDING': ['CONFIRMED', 'CANCELLED'],
-            'CONFIRMED': ['COMPLETED', 'CANCELLED', 'NO_SHOW'],
-            'CANCELLED': [], // No transitions from cancelled
-            'NO_SHOW': [], // No transitions from no-show
-            'COMPLETED': [], // No transitions from completed
+            PENDING: ['CONFIRMED', 'CANCELLED'],
+            CONFIRMED: ['COMPLETED', 'CANCELLED', 'NO_SHOW'],
+            CANCELLED: [], // No transitions from cancelled
+            NO_SHOW: [], // No transitions from no-show
+            COMPLETED: [], // No transitions from completed
           };
 
-          const isValidTransition = validTransitions[currentStatus]?.includes(newStatus) || false;
+          const isValidTransition =
+            validTransitions[currentStatus]?.includes(newStatus) || false;
 
           if (isValidTransition) {
             // Valid transition should succeed
             const updatedBooking = { ...mockBooking, status: newStatus as any };
             mockRepository.updateStatus.mockResolvedValue(updatedBooking);
 
-            const result = await bookingService.updateBookingStatus(bookingId, newStatus as any);
+            const result = await bookingService.updateBookingStatus(
+              bookingId,
+              newStatus as any
+            );
             expect(result.status).toBe(newStatus);
-            expect(mockRepository.updateStatus).toHaveBeenCalledWith(bookingId, newStatus);
+            expect(mockRepository.updateStatus).toHaveBeenCalledWith(
+              bookingId,
+              newStatus
+            );
           } else {
             // Invalid transition should be rejected
-            await expect(bookingService.updateBookingStatus(bookingId, newStatus as any)).rejects.toThrow(
-              /Invalid status transition/
-            );
+            await expect(
+              bookingService.updateBookingStatus(bookingId, newStatus as any)
+            ).rejects.toThrow(/Invalid status transition/);
             expect(mockRepository.updateStatus).not.toHaveBeenCalled();
           }
 

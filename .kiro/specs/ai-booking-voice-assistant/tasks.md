@@ -180,20 +180,20 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - Fix logger usage in AIService, KnowledgeService, and other services
     - _Critical for production reliability_
 
-  - [-] 7.2 Fix GeminiService implementation
+  - [x] 7.2 Fix GeminiService implementation
     - Complete Gemini API integration with proper error handling
     - Implement function calling capabilities
     - Fix AI service test failures
     - _Requirements: 5.1, 5.2, 5.5_
 
-  - [ ] 7.3 Fix property test failures
+  - [x] 7.3 Fix property test failures
     - Resolve BookingService duration validation test issues
     - Fix rate limiting test configuration
     - Fix environment validation test expectations
     - Fix HubSpot service graceful degradation tests
     - _Critical for test reliability_
 
-  - [ ] 7.4 Initialize database and Prisma client
+  - [-] 7.4 Initialize database and Prisma client
     - Generate Prisma client
     - Set up database connection for tests
     - Verify database connectivity
