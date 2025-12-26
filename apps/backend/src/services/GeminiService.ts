@@ -19,6 +19,7 @@ export interface GeminiService {
     context: string,
     functions?: FunctionDeclaration[]
   ): Promise<GeminiResponse>;
+  testConnection(): Promise<boolean>;
 }
 
 export interface GeminiResponse {
@@ -31,8 +32,14 @@ export class GeminiServiceImpl implements GeminiService {
   private model: GenerativeModel;
 
   constructor(apiKey: string) {
+    if (!apiKey || apiKey.trim().length === 0) {
+      throw new Error('Gemini API key is required');
+    }
+
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    logger.info('GeminiService initialized successfully');
   }
 
   async generateResponse(
@@ -44,6 +51,11 @@ export class GeminiServiceImpl implements GeminiService {
         promptLength: prompt.length,
         functionsCount: functions?.length || 0,
       });
+
+      // Validate input
+      if (!prompt || prompt.trim().length === 0) {
+        throw new Error('Prompt cannot be empty');
+      }
 
       const modelWithFunctions =
         functions && functions.length > 0
@@ -78,9 +90,30 @@ export class GeminiServiceImpl implements GeminiService {
         message,
         functionCalls: functionCalls.length > 0 ? functionCalls : undefined,
       };
-    } catch (error) {
-      logger.error('Error generating Gemini response:', error);
-      throw new Error('Failed to generate AI response');
+    } catch (error: any) {
+      logger.error('Error generating Gemini response:', {
+        error: error.message,
+        promptLength: prompt?.length || 0,
+        functionsCount: functions?.length || 0,
+      });
+
+      // Handle specific Gemini API errors
+      if (error.message?.includes('API_KEY')) {
+        throw new Error('Invalid or missing Gemini API key');
+      }
+
+      if (error.message?.includes('QUOTA_EXCEEDED')) {
+        throw new Error('Gemini API quota exceeded');
+      }
+
+      if (error.message?.includes('RATE_LIMIT')) {
+        throw new Error('Gemini API rate limit exceeded');
+      }
+
+      // Generic error for other cases
+      throw new Error(
+        `Failed to generate AI response: ${error.message || 'Unknown error'}`
+      );
     }
   }
 
@@ -92,6 +125,29 @@ export class GeminiServiceImpl implements GeminiService {
     const contextualPrompt = `Context:\n${context}\n\nUser Query: ${prompt}\n\nPlease provide a helpful response based on the context provided. If the context doesn't contain relevant information, let the user know and provide general assistance.`;
 
     return this.generateResponse(contextualPrompt, functions);
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      logger.info('Testing Gemini API connection');
+
+      const result = await this.model.generateContent(
+        'Hello, this is a test message.'
+      );
+      const response = result.response;
+      const text = response.text();
+
+      logger.info('Gemini API connection test successful', {
+        responseLength: text.length,
+      });
+
+      return true;
+    } catch (error: any) {
+      logger.error('Gemini API connection test failed:', {
+        error: error.message,
+      });
+      return false;
+    }
   }
 
   // Static method to get function declarations for booking operations

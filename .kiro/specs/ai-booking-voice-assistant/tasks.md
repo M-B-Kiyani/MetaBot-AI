@@ -112,92 +112,92 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - **Property 19: Environment Validation Round Trip**
     - **Validates: Requirements 9.5, 11.3**
 
-- [x] 5. Checkpoint - Core booking system functional
-  - ❌ **CRITICAL ISSUES FOUND** - Need immediate fixes before proceeding
-
-- [ ] 5.1 **URGENT: Fix TypeScript Configuration Issues**
-  - Fix backend tsconfig.json to allow proper compilation
-  - Resolve allowImportingTsExtensions conflict
-  - Ensure all packages can build successfully
-  - _Critical for deployment_
-
-- [ ] 5.2 **URGENT: Fix Logger and Test Infrastructure**
-  - Fix logger import issues in services
-  - Set up proper test mocks and environment
-  - Ensure all property tests pass
-  - _Critical for production reliability_
-
-- [ ] 5.3 **URGENT: Initialize Database**
-  - Generate Prisma client
-  - Run database migrations
-  - Verify database connectivity
-  - _Critical for application functionality_
-
-- [ ] 5.4 **URGENT: Complete GeminiService Implementation**
-  - Implement proper Gemini API integration
-  - Add function calling capabilities
-  - Fix AI service test failures
-  - _Critical for AI functionality_
-
-- [x] 6. Implement AI services and RAG capabilities
-  - [x] 6.1 Create KnowledgeService for document management
+- [x] 5. Implement AI services and RAG capabilities
+  - [x] 5.1 Create KnowledgeService for document management
     - Implement document embedding using vector similarity
     - Create simple vector search functionality
     - Add document indexing from knowledge base files
     - Implement context injection for AI prompts
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-  - [x] 6.2 Write property test for document similarity search
+  - [x] 5.2 Write property test for document similarity search
     - **Property 12: Document Similarity Search**
     - **Validates: Requirements 6.2, 6.4**
 
-  - [ ] 6.3 Create GeminiService with function calling
-    - Implement Google Gemini API integration
-    - Add function calling support for booking operations
+  - [x] 5.3 Create GeminiService with function calling (partial implementation)
+    - Basic Gemini API integration structure created
+    - Function calling support needs completion
     - Define function schemas for book_appointment and check_availability
     - Implement function execution and response generation
     - _Requirements: 5.1, 5.2, 5.5_
 
-  - [ ] 6.4 Create AIService for chat processing
-    - Implement chat message processing with context management
+  - [x] 5.4 Create AIService for chat processing (partial implementation)
+    - Basic chat message processing structure created
+    - Context management needs completion
     - Integrate GeminiService and KnowledgeService
     - Add conversation context preservation across sessions
     - Implement booking intent detection and function calling
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 6.5 Write property test for AI message processing
+  - [x] 5.5 Write property test for AI message processing
     - **Property 9: AI Message Processing**
     - **Validates: Requirements 5.1, 5.2, 5.5**
 
-  - [ ] 6.6 Write property test for conversation context preservation
+  - [x] 5.6 Write property test for conversation context preservation
     - **Property 10: Conversation Context Preservation**
     - **Validates: Requirements 5.4**
 
-  - [ ] 6.7 Write property test for RAG knowledge integration
+  - [x] 5.7 Write property test for RAG knowledge integration
     - **Property 11: RAG Knowledge Integration**
     - **Validates: Requirements 5.3, 6.1, 6.3, 6.5**
 
-- [x] 7. Implement voice assistant integration
-  - [x] 7.1 Create RetellService for webhook processing
+- [x] 6. Implement voice assistant integration
+  - [x] 6.1 Create RetellService for webhook processing
     - Implement Retell AI webhook signature verification
     - Add webhook payload parsing and validation
     - Create voice function call extraction from transcripts
     - _Requirements: 4.1, 4.2_
 
-  - [x] 7.2 Create VoiceService for voice interactions
+  - [x] 6.2 Create VoiceService for voice interactions
     - Implement voice booking request processing
     - Integrate with BookingService for appointment creation
     - Add spoken confirmation response generation
     - Handle voice function calls and responses
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [x] 7.3 Write property test for voice webhook processing
+  - [x] 6.3 Write property test for voice webhook processing
     - **Property 7: Voice Webhook Processing**
     - **Validates: Requirements 4.1, 4.2**
 
-  - [x] 7.4 Write property test for voice booking integration
+  - [x] 6.4 Write property test for voice booking integration
     - **Property 8: Voice Booking Integration**
     - **Validates: Requirements 4.3, 4.4**
+
+- [-] 7. **CRITICAL: Fix failing tests and core issues**
+  - [x] 7.1 Fix logger import issues across all services
+    - Resolve "Cannot read properties of undefined (reading 'error')" errors
+    - Ensure proper logger initialization in test environment
+    - Fix logger usage in AIService, KnowledgeService, and other services
+    - _Critical for production reliability_
+
+  - [-] 7.2 Fix GeminiService implementation
+    - Complete Gemini API integration with proper error handling
+    - Implement function calling capabilities
+    - Fix AI service test failures
+    - _Requirements: 5.1, 5.2, 5.5_
+
+  - [ ] 7.3 Fix property test failures
+    - Resolve BookingService duration validation test issues
+    - Fix rate limiting test configuration
+    - Fix environment validation test expectations
+    - Fix HubSpot service graceful degradation tests
+    - _Critical for test reliability_
+
+  - [ ] 7.4 Initialize database and Prisma client
+    - Generate Prisma client
+    - Set up database connection for tests
+    - Verify database connectivity
+    - _Critical for application functionality_
 
 - [ ] 8. Create API endpoints for AI and voice services
   - [ ] 8.1 Add AI chat endpoints to Express router
@@ -216,108 +216,115 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - **Property 20: Service Operation Logging**
     - **Validates: Requirements 9.3**
 
-- [ ] 9. **NEW: Production Deployment Preparation**
-  - [ ] 9.1 Fix all failing tests and ensure 100% pass rate
-  - [ ] 9.2 Verify all environment variables are properly configured
-  - [ ] 9.3 Test database connectivity and migrations on Railway
-  - [ ] 9.4 Validate all external service integrations
-  - [ ] 9.5 Performance testing and optimization
-  - [ ] 9.6 Security audit and vulnerability assessment
-
-- [ ] 10. Checkpoint - Backend production ready
+- [ ] 9. Checkpoint - Backend core functionality working
   - All tests passing, database connected, APIs functional
 
-- [ ] 11. Implement React frontend application
-  - [ ] 11.1 Create React app with TypeScript and TailwindCSS
-    - Set up React 19 with Vite build configuration
+- [ ] 10. Implement React frontend application
+  - [ ] 10.1 Create React app with TypeScript and TailwindCSS
+    - Set up React with proper TypeScript configuration
     - Add TailwindCSS for styling
     - Create shared component library
     - Set up routing and state management
     - _Requirements: 7.4_
 
-  - [ ] 11.2 Build booking interface components
+  - [ ] 10.2 Build booking interface components
     - Create booking form with validation
     - Add date/time picker with availability checking
     - Implement booking confirmation and status display
     - Use shared types from packages/shared
     - _Requirements: 1.1, 1.2, 7.5_
 
-  - [ ] 11.3 Add chat interface for AI assistant
+  - [ ] 10.3 Add chat interface for AI assistant
     - Create chat UI with message history
     - Integrate with backend AI chat endpoints
     - Add typing indicators and message status
     - Implement conversation context management
     - _Requirements: 5.1, 5.4_
 
-- [ ] 12. Implement embeddable widget
-  - [ ] 12.1 Create widget with Shadow DOM isolation
+- [ ] 11. Implement embeddable widget
+  - [ ] 11.1 Fix widget TypeScript configuration
+    - Resolve React import issues
+    - Fix JSX configuration
+    - Ensure proper TypeScript compilation
+    - _Critical for widget functionality_
+
+  - [ ] 11.2 Create widget with Shadow DOM isolation
     - Build standalone widget using React and Shadow DOM
     - Implement CSS isolation to prevent style conflicts
     - Create iframe and script tag embedding options
     - Add responsive design for mobile and desktop
     - _Requirements: 7.1, 7.2, 7.4_
 
-  - [ ] 12.2 Write property test for widget style isolation
+  - [ ] 11.3 Write property test for widget style isolation
     - **Property 13: Widget Style Isolation**
     - **Validates: Requirements 7.2**
 
-  - [ ] 12.3 Add widget API communication
+  - [ ] 11.4 Add widget API communication
     - Implement API client using shared TypeScript types
     - Add error handling and retry logic
     - Create widget configuration options
     - Ensure independent operation when embedded
     - _Requirements: 7.1, 7.5_
 
-  - [ ] 12.4 Write unit test for widget embedding scenarios
+  - [ ] 11.5 Write unit test for widget embedding scenarios
     - Test iframe and script tag embedding
     - **Validates: Requirements 7.1**
 
-- [ ] 13. Add database referential integrity and migrations
-  - [ ] 13.1 Implement database constraints and indexes
+- [ ] 12. Add database referential integrity and migrations
+  - [ ] 12.1 Implement database constraints and indexes
     - Add foreign key constraints for external service IDs
     - Create database indexes for performance optimization
     - Implement data validation at database level
     - _Requirements: 8.3, 8.5_
 
-  - [ ] 13.2 Write property test for database referential integrity
+  - [ ] 12.2 Write property test for database referential integrity
     - **Property 16: Database Referential Integrity**
     - **Validates: Requirements 8.3**
 
-  - [ ] 13.3 Create database migration scripts
+  - [ ] 12.3 Create database migration scripts
     - Set up automatic migration execution on deployment
     - Add seed data for development and testing
     - Create rollback procedures for migrations
     - _Requirements: 11.2_
 
-  - [ ] 13.4 Write unit test for database migrations
+  - [ ] 12.4 Write unit test for database migrations
     - Test migration execution and rollback
     - **Validates: Requirements 11.2**
 
-- [ ] 14. Final integration and deployment preparation
-  - [ ] 14.1 Wire all services together in main application
+- [ ] 13. Final integration and deployment preparation
+  - [ ] 13.1 Wire all services together in main application
     - Connect all services through dependency injection
     - Add service health checks and monitoring
     - Implement graceful shutdown procedures
     - Create production configuration management
     - _Requirements: 9.4, 11.1_
 
-  - [ ] 14.2 Add comprehensive integration tests
+  - [ ] 13.2 Add comprehensive integration tests
     - Create end-to-end booking workflow tests
     - Test AI chat and voice integration flows
     - Add widget embedding and functionality tests
     - Validate external service integration
     - _Requirements: All requirements_
 
-  - [ ] 14.3 Write integration tests for complete user workflows
+  - [ ] 13.3 Write integration tests for complete user workflows
     - Test booking creation through all channels (web, voice, widget)
     - Test AI assistant with RAG responses
     - Test external service synchronization
+
+- [ ] 14. Production deployment preparation
+  - [ ] 14.1 Fix all remaining test failures and ensure 100% pass rate
+  - [ ] 14.2 Verify all environment variables are properly configured
+  - [ ] 14.3 Test database connectivity and migrations on Railway
+  - [ ] 14.4 Validate all external service integrations
+  - [ ] 14.5 Performance testing and optimization
+  - [ ] 14.6 Security audit and vulnerability assessment
 
 - [ ] 15. Final checkpoint - Complete system validation
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
 
+- **CRITICAL PRIORITY**: Tasks 7.1-7.4 must be completed first to fix failing tests and core infrastructure issues
 - All tasks are required for comprehensive quality assurance from the start
 - Each task references specific requirements for traceability
 - Checkpoints ensure incremental validation at major milestones

@@ -1,17 +1,27 @@
 import * as fc from 'fast-check';
-import { Booking, BookingStatus } from '../../../../packages/shared/src/types/booking';
+import {
+  Booking,
+  BookingStatus,
+} from '../../../../packages/shared/src/types/booking';
 
 // Feature: ai-booking-voice-assistant, Property 6: CRM Failure Graceful Degradation
 // **Validates: Requirements 3.4**
 
 // Mock the logger before importing HubSpotService
-jest.mock('../config/logger', () => ({
-  logger: {
+jest.mock('../config/logger', () => {
+  const mockLogger = {
     info: jest.fn(),
-    warn: jest.fn(),
     error: jest.fn(),
-  },
-}));
+    warn: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    default: mockLogger,
+    logger: mockLogger,
+  };
+});
 
 // Mock HubSpot API client
 const mockHubSpotClient = {
@@ -49,7 +59,7 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
   });
 
   // Property 6: CRM Failure Graceful Degradation
-  // For any booking creation where CRM integration fails, the booking should still be created successfully 
+  // For any booking creation where CRM integration fails, the booking should still be created successfully
   // and the error should be logged.
   test('Property 6: CRM Failure Graceful Degradation - Service Disabled', async () => {
     await fc.assert(
@@ -66,7 +76,9 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
           hubspotService = new HubSpotService();
 
           // For any contact data, when HubSpot is disabled, operations should fail gracefully
-          await expect(hubspotService.createOrUpdateContact(contactData)).rejects.toThrow('HubSpot integration is not configured');
+          await expect(
+            hubspotService.createOrUpdateContact(contactData)
+          ).rejects.toThrow('HubSpot integration is not configured');
 
           // Service should report as not configured
           expect(hubspotService.isConfigured()).toBe(false);
@@ -97,10 +109,14 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
 
           // Mock API failures
           const apiError = new Error(errorMessage);
-          mockHubSpotClient.crm.contacts.searchApi.doSearch.mockRejectedValue(apiError);
+          mockHubSpotClient.crm.contacts.searchApi.doSearch.mockRejectedValue(
+            apiError
+          );
 
           // For any contact data and any API error, the service should throw an error with context
-          await expect(hubspotService.createOrUpdateContact(contactData)).rejects.toThrow();
+          await expect(
+            hubspotService.createOrUpdateContact(contactData)
+          ).rejects.toThrow();
 
           // The error should be logged (verify logger was called)
           const { logger } = require('../config/logger');
@@ -125,9 +141,15 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
           email: fc.emailAddress(),
           phone: fc.option(fc.string({ minLength: 10, maxLength: 15 })),
           inquiry: fc.option(fc.string({ minLength: 1, maxLength: 500 })),
-          startTime: fc.date({ min: new Date(), max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }),
+          startTime: fc.date({
+            min: new Date(),
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          }),
           duration: fc.constantFrom(15, 30, 45, 60, 90, 120),
-          status: fc.constantFrom(BookingStatus.PENDING, BookingStatus.CONFIRMED),
+          status: fc.constantFrom(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
+          ),
           confirmationSent: fc.boolean(),
           reminderSent: fc.boolean(),
           calendarEventId: fc.option(fc.uuid()),
@@ -142,11 +164,17 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
 
           // Mock booking metadata addition failure
           const apiError = new Error(errorMessage);
-          mockHubSpotClient.crm.contacts.basicApi.getById.mockRejectedValue(apiError);
-          mockHubSpotClient.crm.contacts.basicApi.update.mockRejectedValue(apiError);
+          mockHubSpotClient.crm.contacts.basicApi.getById.mockRejectedValue(
+            apiError
+          );
+          mockHubSpotClient.crm.contacts.basicApi.update.mockRejectedValue(
+            apiError
+          );
 
           // For any booking metadata addition failure, the service should throw an error
-          await expect(hubspotService.addBookingToContact(contactId, booking)).rejects.toThrow();
+          await expect(
+            hubspotService.addBookingToContact(contactId, booking)
+          ).rejects.toThrow();
 
           // The error should be logged
           const { logger } = require('../config/logger');
@@ -167,9 +195,15 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
           email: fc.emailAddress(),
           phone: fc.option(fc.string({ minLength: 10, maxLength: 15 })),
           inquiry: fc.option(fc.string({ minLength: 1, maxLength: 500 })),
-          startTime: fc.date({ min: new Date(), max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }),
+          startTime: fc.date({
+            min: new Date(),
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          }),
           duration: fc.constantFrom(15, 30, 45, 60, 90, 120),
-          status: fc.constantFrom(BookingStatus.PENDING, BookingStatus.CONFIRMED),
+          status: fc.constantFrom(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
+          ),
           confirmationSent: fc.boolean(),
           reminderSent: fc.boolean(),
           calendarEventId: fc.option(fc.uuid()),
@@ -183,7 +217,9 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
           hubspotService = new HubSpotService();
 
           // For any booking metadata addition when HubSpot is disabled, it should complete without error
-          await expect(hubspotService.addBookingToContact(contactId, booking)).resolves.not.toThrow();
+          await expect(
+            hubspotService.addBookingToContact(contactId, booking)
+          ).resolves.not.toThrow();
 
           // Warning should be logged
           const { logger } = require('../config/logger');
@@ -192,8 +228,12 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
           );
 
           // No API calls should be made
-          expect(mockHubSpotClient.crm.contacts.basicApi.update).not.toHaveBeenCalled();
-          expect(mockHubSpotClient.crm.contacts.basicApi.getById).not.toHaveBeenCalled();
+          expect(
+            mockHubSpotClient.crm.contacts.basicApi.update
+          ).not.toHaveBeenCalled();
+          expect(
+            mockHubSpotClient.crm.contacts.basicApi.getById
+          ).not.toHaveBeenCalled();
         }
       ),
       { numRuns: 50 }
@@ -211,7 +251,9 @@ describe('HubSpotService Graceful Degradation Property Tests', () => {
 
           // Mock connection test failure
           const apiError = new Error(errorMessage);
-          mockHubSpotClient.crm.contacts.basicApi.getPage.mockRejectedValue(apiError);
+          mockHubSpotClient.crm.contacts.basicApi.getPage.mockRejectedValue(
+            apiError
+          );
 
           // For any connection test failure, it should return false and log the error
           const result = await hubspotService.testConnection();

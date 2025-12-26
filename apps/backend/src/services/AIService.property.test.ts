@@ -45,11 +45,20 @@ jest.mock('fs/promises', () => ({
 }));
 
 // Mock logger
-jest.mock('../config/logger', () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-}));
+jest.mock('../config/logger', () => {
+  const mockLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    default: mockLogger,
+    logger: mockLogger,
+  };
+});
 
 describe('AIService Property Tests', () => {
   let aiService: AIServiceImpl;

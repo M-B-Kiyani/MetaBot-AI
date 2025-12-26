@@ -4,7 +4,7 @@ import { config } from './environment';
 const logLevel =
   process.env.LOG_LEVEL || config.NODE_ENV === 'production' ? 'info' : 'debug';
 
-export const logger = winston.createLogger({
+const logger = winston.createLogger({
   level: logLevel,
   format: winston.format.combine(
     winston.format.timestamp(),
@@ -21,6 +21,10 @@ export const logger = winston.createLogger({
     }),
   ],
 });
+
+// Export both as named and default export for compatibility
+export { logger };
+export default logger;
 
 if (
   config.NODE_ENV === 'production' &&

@@ -1,17 +1,27 @@
 import * as fc from 'fast-check';
-import { Booking, BookingStatus } from '../../../../packages/shared/src/types/booking';
+import {
+  Booking,
+  BookingStatus,
+} from '../../../../packages/shared/src/types/booking';
 
 // Feature: ai-booking-voice-assistant, Property 4: Calendar Event Synchronization
 // **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
 
 // Mock the logger before importing GoogleCalendarService
-jest.mock('../config/logger', () => ({
-  logger: {
+jest.mock('../config/logger', () => {
+  const mockLogger = {
     info: jest.fn(),
-    warn: jest.fn(),
     error: jest.fn(),
-  },
-}));
+    warn: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    default: mockLogger,
+    logger: mockLogger,
+  };
+});
 
 // Mock googleapis
 const mockCalendarApi = {
@@ -66,7 +76,7 @@ describe('GoogleCalendarService Property Tests', () => {
   });
 
   // Property 4: Calendar Event Synchronization
-  // For any booking status change (confirmed, cancelled, updated), the corresponding calendar event 
+  // For any booking status change (confirmed, cancelled, updated), the corresponding calendar event
   // should be created, deleted, or updated accordingly, and the calendar event ID should be stored in the booking record.
   test('Property 4: Calendar Event Synchronization', async () => {
     await fc.assert(
@@ -78,9 +88,16 @@ describe('GoogleCalendarService Property Tests', () => {
           email: fc.emailAddress(),
           phone: fc.option(fc.string({ minLength: 10, maxLength: 15 })),
           inquiry: fc.option(fc.string({ minLength: 1, maxLength: 500 })),
-          startTime: fc.date({ min: new Date(), max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }),
+          startTime: fc.date({
+            min: new Date(),
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          }),
           duration: fc.constantFrom(15, 30, 45, 60, 90, 120),
-          status: fc.constantFrom(BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.CANCELLED),
+          status: fc.constantFrom(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED,
+            BookingStatus.CANCELLED
+          ),
           confirmationSent: fc.boolean(),
           reminderSent: fc.boolean(),
           calendarEventId: fc.option(fc.uuid()),
@@ -90,7 +107,8 @@ describe('GoogleCalendarService Property Tests', () => {
         }),
         async (booking: Booking) => {
           // Test calendar event creation
-          const mockEventId = 'test-event-id-' + Math.random().toString(36).substr(2, 9);
+          const mockEventId =
+            'test-event-id-' + Math.random().toString(36).substr(2, 9);
           mockCalendarApi.events.insert.mockResolvedValue({
             data: { id: mockEventId },
           });
@@ -108,7 +126,9 @@ describe('GoogleCalendarService Property Tests', () => {
                   timeZone: 'America/New_York',
                 }),
                 end: expect.objectContaining({
-                  dateTime: new Date(booking.startTime.getTime() + booking.duration * 60 * 1000).toISOString(),
+                  dateTime: new Date(
+                    booking.startTime.getTime() + booking.duration * 60 * 1000
+                  ).toISOString(),
                   timeZone: 'America/New_York',
                 }),
                 attendees: expect.arrayContaining([
@@ -179,9 +199,15 @@ describe('GoogleCalendarService Property Tests', () => {
           email: fc.emailAddress(),
           phone: fc.option(fc.string({ minLength: 10, maxLength: 15 })),
           inquiry: fc.option(fc.string({ minLength: 1, maxLength: 500 })),
-          startTime: fc.date({ min: new Date(), max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }),
+          startTime: fc.date({
+            min: new Date(),
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          }),
           duration: fc.constantFrom(15, 30, 45, 60, 90, 120),
-          status: fc.constantFrom(BookingStatus.PENDING, BookingStatus.CONFIRMED),
+          status: fc.constantFrom(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
+          ),
           confirmationSent: fc.boolean(),
           reminderSent: fc.boolean(),
           calendarEventId: fc.option(fc.uuid()),
@@ -192,8 +218,9 @@ describe('GoogleCalendarService Property Tests', () => {
         async (booking: Booking) => {
           // Clear mocks for each iteration
           jest.clearAllMocks();
-          
-          const mockEventId = 'event-' + Math.random().toString(36).substr(2, 9);
+
+          const mockEventId =
+            'event-' + Math.random().toString(36).substr(2, 9);
           mockCalendarApi.events.insert.mockResolvedValue({
             data: { id: mockEventId },
           });
@@ -223,7 +250,8 @@ describe('GoogleCalendarService Property Tests', () => {
           // The event duration should match the booking duration
           const startTime = new Date(calledWith.requestBody.start.dateTime);
           const endTime = new Date(calledWith.requestBody.end.dateTime);
-          const actualDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+          const actualDuration =
+            (endTime.getTime() - startTime.getTime()) / (1000 * 60);
           expect(actualDuration).toBe(booking.duration);
         }
       ),
@@ -240,9 +268,15 @@ describe('GoogleCalendarService Property Tests', () => {
           email: fc.emailAddress(),
           phone: fc.option(fc.string({ minLength: 10, maxLength: 15 })),
           inquiry: fc.option(fc.string({ minLength: 1, maxLength: 500 })),
-          startTime: fc.date({ min: new Date(), max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }),
+          startTime: fc.date({
+            min: new Date(),
+            max: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          }),
           duration: fc.constantFrom(15, 30, 45, 60, 90, 120),
-          status: fc.constantFrom(BookingStatus.PENDING, BookingStatus.CONFIRMED),
+          status: fc.constantFrom(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
+          ),
           confirmationSent: fc.boolean(),
           reminderSent: fc.boolean(),
           calendarEventId: fc.option(fc.uuid()),
@@ -253,18 +287,28 @@ describe('GoogleCalendarService Property Tests', () => {
         async (booking: Booking) => {
           // Test error handling when calendar API fails
           const errorMessage = 'Calendar API error';
-          mockCalendarApi.events.insert.mockRejectedValue(new Error(errorMessage));
+          mockCalendarApi.events.insert.mockRejectedValue(
+            new Error(errorMessage)
+          );
 
           // For any booking, if calendar creation fails, it should throw an error
           await expect(calendarService.createEvent(booking)).rejects.toThrow();
 
           // Test error handling for update operations
-          mockCalendarApi.events.update.mockRejectedValue(new Error(errorMessage));
-          await expect(calendarService.updateEvent('test-id', booking)).rejects.toThrow();
+          mockCalendarApi.events.update.mockRejectedValue(
+            new Error(errorMessage)
+          );
+          await expect(
+            calendarService.updateEvent('test-id', booking)
+          ).rejects.toThrow();
 
           // Test error handling for delete operations
-          mockCalendarApi.events.delete.mockRejectedValue(new Error(errorMessage));
-          await expect(calendarService.deleteEvent('test-id')).rejects.toThrow();
+          mockCalendarApi.events.delete.mockRejectedValue(
+            new Error(errorMessage)
+          );
+          await expect(
+            calendarService.deleteEvent('test-id')
+          ).rejects.toThrow();
         }
       ),
       { numRuns: 50 }
