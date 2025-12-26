@@ -30,6 +30,6 @@
   },
   "packageManager": "pnpm@8.15.0",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1"
+    "@google/generative-ai": "^0.21.0"
   }
 }

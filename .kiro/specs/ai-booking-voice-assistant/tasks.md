@@ -173,7 +173,7 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - **Property 8: Voice Booking Integration**
     - **Validates: Requirements 4.3, 4.4**
 
-- [-] 7. **CRITICAL: Fix failing tests and core issues**
+- [x] 7. **CRITICAL: Fix failing tests and core issues**
   - [x] 7.1 Fix logger import issues across all services
     - Resolve "Cannot read properties of undefined (reading 'error')" errors
     - Ensure proper logger initialization in test environment
@@ -193,26 +193,26 @@ This implementation plan breaks down the AI Booking Voice Assistant into discret
     - Fix HubSpot service graceful degradation tests
     - _Critical for test reliability_
 
-  - [-] 7.4 Initialize database and Prisma client
+  - [x] 7.4 Initialize database and Prisma client
     - Generate Prisma client
     - Set up database connection for tests
     - Verify database connectivity
     - _Critical for application functionality_
 
-- [ ] 8. Create API endpoints for AI and voice services
-  - [ ] 8.1 Add AI chat endpoints to Express router
+- [-] 8. Create API endpoints for AI and voice services
+  - [x] 8.1 Add AI chat endpoints to Express router
     - Create POST /api/chat endpoint for message processing
     - Integrate with AIService for response generation
     - Add session management for conversation context
     - _Requirements: 5.1, 5.4_
 
-  - [ ] 8.2 Add voice webhook endpoints
+  - [x] 8.2 Add voice webhook endpoints
     - Create POST /api/voice/webhook for Retell AI integration
     - Add webhook signature verification middleware
     - Integrate with VoiceService for processing
     - _Requirements: 4.1_
 
-  - [ ] 8.3 Write property test for service operation logging
+  - [-] 8.3 Write property test for service operation logging
     - **Property 20: Service Operation Logging**
     - **Validates: Requirements 9.3**
 

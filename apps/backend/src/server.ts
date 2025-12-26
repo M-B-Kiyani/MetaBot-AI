@@ -7,6 +7,8 @@ import { logger } from './config/logger';
 import { errorHandler, AppError } from './middlewares/errorHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import bookingRoutes from './routes/bookingRoutes';
+import aiRoutes from './routes/aiRoutes';
+import voiceRoutes from './routes/voiceRoutes';
 
 const app = express();
 
@@ -119,6 +121,8 @@ app.get('/health', async (_req, res) => {
 
 // API routes
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/voice', voiceRoutes);
 
 // 404 handler for undefined routes
 app.use('*', (_req, _res, next) => {
