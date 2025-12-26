@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { BookingResponse, BookingStatus } from '@ai-booking/shared';
-import { Card, CardHeader, CardContent, Button } from './ui';
+import { BookingStatus } from '@ai-booking/shared';
+import { Card, CardContent, Button } from './ui';
 import { useBookings } from '../hooks/useBookings';
 
 interface BookingStatusProps {

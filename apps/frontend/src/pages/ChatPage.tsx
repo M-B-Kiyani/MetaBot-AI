@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardHeader, CardContent } from '../components/ui';
+import { ChatInterface } from '../components/ChatInterface';
 
 export const ChatPage: React.FC = () => {
   return (
@@ -14,20 +14,34 @@ export const ChatPage: React.FC = () => {
           </p>
         </div>
 
-        <Card className="h-96">
-          <CardHeader>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Chat Interface
-            </h2>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12">
-              <p className="text-gray-500">
-                Chat interface component will be implemented in the next subtask
-              </p>
+        <ChatInterface className="h-[600px]" />
+
+        {/* Additional Information */}
+        <div className="mt-8 bg-blue-50 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-blue-900 mb-4">
+            What can the AI assistant help you with?
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
+            <div>
+              <h4 className="font-medium mb-2">Booking Services</h4>
+              <ul className="space-y-1">
+                <li>• Schedule new appointments</li>
+                <li>• Check availability</li>
+                <li>• Modify existing bookings</li>
+                <li>• Cancel appointments</li>
+              </ul>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h4 className="font-medium mb-2">General Assistance</h4>
+              <ul className="space-y-1">
+                <li>• Answer service questions</li>
+                <li>• Provide company information</li>
+                <li>• Help with technical issues</li>
+                <li>• General inquiries</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

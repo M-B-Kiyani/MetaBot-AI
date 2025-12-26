@@ -32,9 +32,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   return (
     <Input
       type="datetime-local"
-      label={label}
-      error={error}
-      helperText={helperText}
+      label={label || ''}
+      error={error || ''}
+      helperText={helperText || ''}
       value={value}
       onChange={handleChange}
       min={defaultMinDate}

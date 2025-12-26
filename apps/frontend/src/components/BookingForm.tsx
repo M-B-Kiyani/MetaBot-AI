@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CreateBookingRequest, BookingDurations } from '@ai-booking/shared';
 import {
   Button,
@@ -90,6 +90,14 @@ export const BookingForm: React.FC<BookingFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const clearError = (field: keyof FormErrors) => {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
+  };
+
   const handleInputChange =
     (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -99,24 +107,21 @@ export const BookingForm: React.FC<BookingFormProps> = ({
 
       // Clear error when user starts typing
       if (errors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
+        clearError(field);
       }
 
       // Reset availability check when time or duration changes
       if (field === 'startTime' || field === 'duration') {
         setAvailabilityChecked(false);
-        setErrors((prev) => ({ ...prev, availability: undefined }));
+        clearError('availability');
       }
     };
 
   const handleDateTimeChange = (value: string) => {
     setFormData((prev) => ({ ...prev, startTime: value }));
     setAvailabilityChecked(false);
-    setErrors((prev) => ({
-      ...prev,
-      startTime: undefined,
-      availability: undefined,
-    }));
+    clearError('startTime');
+    clearError('availability');
   };
 
   const handleCheckAvailability = async () => {
@@ -129,7 +134,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
     }
 
     setIsCheckingAvailability(true);
-    setErrors((prev) => ({ ...prev, availability: undefined }));
+    clearError('availability');
 
     try {
       const startTime = new Date(formData.startTime);
@@ -137,7 +142,6 @@ export const BookingForm: React.FC<BookingFormProps> = ({
 
       if (available) {
         setAvailabilityChecked(true);
-        setErrors((prev) => ({ ...prev, availability: undefined }));
       } else {
         setErrors((prev) => ({
           ...prev,
@@ -211,7 +215,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
               label="Full Name *"
               value={formData.name}
               onChange={handleInputChange('name')}
-              error={errors.name}
+              error={errors.name || ''}
               placeholder="Enter your full name"
             />
 
@@ -220,7 +224,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
               type="email"
               value={formData.email}
               onChange={handleInputChange('email')}
-              error={errors.email}
+              error={errors.email || ''}
               placeholder="Enter your email address"
             />
 
@@ -229,7 +233,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
               type="tel"
               value={formData.phone}
               onChange={handleInputChange('phone')}
-              error={errors.phone}
+              error={errors.phone || ''}
               placeholder="Enter your phone number (optional)"
             />
 
@@ -259,7 +263,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
               label="Preferred Date & Time *"
               value={formData.startTime}
               onChange={handleDateTimeChange}
-              error={errors.startTime}
+              error={errors.startTime || ''}
               helperText="Select your preferred appointment date and time"
             />
 
@@ -268,7 +272,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({
               value={formData.duration}
               onChange={handleInputChange('duration')}
               options={durationOptions}
-              error={errors.duration}
+              error={errors.duration || ''}
               helperText="How long do you expect the appointment to take?"
             />
 
