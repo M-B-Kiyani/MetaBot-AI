@@ -11,7 +11,10 @@
     "type-check": "pnpm run --recursive type-check",
     "db:generate": "pnpm --filter backend db:generate",
     "db:push": "pnpm --filter backend db:push",
-    "db:migrate": "pnpm --filter backend db:migrate"
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "validate:production": "node scripts/validate-production.js",
+    "deploy:production": "bash scripts/deploy-production.sh",
+    "start:production": "NODE_ENV=production pnpm --filter backend start"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
