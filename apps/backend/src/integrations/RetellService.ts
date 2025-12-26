@@ -311,6 +311,79 @@ export class RetellServiceImpl implements RetellService {
     }
   }
 
+  async initiateCall(config: CallInitiationConfig): Promise<CallResponse> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Retell API key not configured');
+      }
+
+      const response = await fetch(`${this.baseUrl}/create-phone-call`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agent_id: config.agent_id,
+          to_number: config.to_number,
+          from_number: config.from_number,
+          metadata: config.metadata || {},
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Retell API error: ${response.status} ${errorText}`);
+      }
+
+      const callData = await response.json();
+
+      logger.info('Call initiated successfully via Retell API', {
+        callId: callData.call_id,
+        status: callData.call_status,
+        toNumber: config.to_number.replace(/\d(?=\d{4})/g, '*'), // Mask for logging
+      });
+
+      return callData;
+    } catch (error) {
+      logger.error('Failed to initiate call via Retell API:', error);
+      throw error;
+    }
+  }
+
+  async getCallStatus(callId: string): Promise<CallStatusResponse> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Retell API key not configured');
+      }
+
+      const response = await fetch(`${this.baseUrl}/get-call/${callId}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Retell API error: ${response.status} ${errorText}`);
+      }
+
+      const callData = await response.json();
+
+      logger.info('Call status retrieved from Retell API', {
+        callId: callData.call_id,
+        status: callData.call_status,
+      });
+
+      return callData;
+    } catch (error) {
+      logger.error('Failed to get call status from Retell API:', error);
+      throw error;
+    }
+  }
+
   private generateCallId(): string {
     return `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }

@@ -3,7 +3,10 @@ import { VoiceController } from '../controllers/VoiceController';
 import { VoiceServiceImpl } from '../services/VoiceService';
 import { BookingService, BookingServiceImpl } from '../services/BookingService';
 import { PrismaBookingRepository } from '../repositories/BookingRepository';
-import { RetellService } from '../integrations/RetellService';
+import {
+  RetellService,
+  RetellServiceImpl,
+} from '../integrations/RetellService';
 import { PrismaClient } from '@prisma/client';
 import { config } from '../config/environment';
 
@@ -16,11 +19,13 @@ const bookingService = new BookingServiceImpl(bookingRepository);
 
 // Initialize Retell service
 const retellApiKey = config.RETELL_API_KEY;
+const retellWebhookSecret = config.RETELL_WEBHOOK_SECRET;
+
 if (!retellApiKey) {
   throw new Error('RETELL_API_KEY is required for voice service');
 }
 
-const retellService = new RetellService(retellApiKey);
+const retellService = new RetellServiceImpl(retellApiKey, retellWebhookSecret);
 const voiceService = new VoiceServiceImpl(bookingService, retellService);
 const voiceController = new VoiceController(voiceService, retellService);
 
