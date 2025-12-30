@@ -83,3 +83,14 @@ build/
 .tmp/
 temp/
 .health-check-temp
+# Widget-specific ignores
+*.api-key
+widget-config.local.js
+test-credentials.json
+
+# Generated widget files with embedded keys
+*-with-keys.js
+*-production.js
+
+# Widget test files with real API keys
+widget-test-live.html

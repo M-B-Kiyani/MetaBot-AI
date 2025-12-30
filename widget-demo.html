@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metalogics AI Widget Demo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        margin: 0;
+        padding: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+      }
+
+      .demo-section {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 30px;
+        border-radius: 15px;
+        margin: 20px 0;
+      }
+
+      .demo-section h2 {
+        margin-top: 0;
+        color: #fff;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+
+      button {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 24px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+      }
+
+      .feature-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .feature-list li {
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .feature-list li:before {
+        content: "✨ ";
+        margin-right: 10px;
+      }
+
+      .status {
+        background: rgba(0, 255, 0, 0.2);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border: 1px solid rgba(0, 255, 0, 0.3);
+      }
+
+      .code-block {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 20px;
+        border-radius: 10px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        overflow-x: auto;
+        margin: 15px 0;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 20px;
+        }
+
+        .container {
+          padding: 20px;
+        }
+
+        h1 {
+          font-size: 2em;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🤖 Metalogics AI Widget Demo</h1>
+
+      <div class="demo-section">
+        <h2>Widget Status</h2>
+        <div class="status" id="widget-status">
+          <strong>Status:</strong> <span id="status-text">Loading...</span>
+        </div>
+        <p>
+          The AI widget should appear in the bottom-right corner of this page.
+          Click the chat button to start a conversation!
+        </p>
+      </div>
+
+      <div class="demo-section">
+        <h2>Test Controls</h2>
+        <div class="button-group">
+          <button onclick="testWidget('open')">Open Widget</button>
+          <button onclick="testWidget('close')">Close Widget</button>
+          <button onclick="testWidget('toggle')">Toggle Widget</button>
+          <button onclick="testWidget('message')">Send Test Message</button>
+        </div>
+      </div>
+
+      <div class="demo-section">
+        <h2>Features</h2>
+        <ul class="feature-list">
+          <li>AI-powered customer support</li>
+          <li>Lead generation and qualification</li>
+          <li>Service information and booking</li>
+          <li>Responsive design for all devices</li>
+          <li>Conversation memory and context</li>
+          <li>Typing indicators and smooth animations</li>
+          <li>Accessibility support</li>
+          <li>Easy WordPress integration</li>
+        </ul>
+      </div>
+
+      <div class="demo-section">
+        <h2>Integration Code</h2>
+        <p>Add this code to your website to embed the widget:</p>
+        <div class="code-block">
+          &lt;script src="https://your-domain.com/embed.js"
+          data-api-url="https://metabot-ai-production.up.railway.app"
+          data-api-key="your-api-key" data-company-name="Your Company"
+          data-welcome-message="Hello! How can I help you today?"
+          &gt;&lt;/script&gt;
+        </div>
+      </div>
+
+      <div class="demo-section">
+        <h2>About Metalogics</h2>
+        <p>
+          Metalogics.io provides AI-powered solutions for businesses, including:
+        </p>
+        <ul class="feature-list">
+          <li>Web Development & Design</li>
+          <li>AI Integration & Automation</li>
+          <li>Digital Marketing & SEO</li>
+          <li>Custom Software Development</li>
+          <li>Consultation & Strategy</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      // Widget testing functions
+      function testWidget(action) {
+        if (typeof MetalogicsWidgetAPI === "undefined") {
+          alert(
+            "Widget API not available yet. Please wait for the widget to load."
+          );
+          return;
+        }
+
+        switch (action) {
+          case "open":
+            MetalogicsWidgetAPI.open();
+            break;
+          case "close":
+            MetalogicsWidgetAPI.close();
+            break;
+          case "toggle":
+            MetalogicsWidgetAPI.toggle();
+            break;
+          case "message":
+            MetalogicsWidgetAPI.sendMessage(
+              "Hello! I'm testing the widget. Can you tell me about Metalogics services?"
+            );
+            break;
+        }
+      }
+
+      // Check widget status
+      function checkWidgetStatus() {
+        const statusText = document.getElementById("status-text");
+
+        if (typeof MetalogicsWidgetAPI !== "undefined") {
+          statusText.textContent = "✅ Widget loaded and ready";
+          statusText.style.color = "#00ff00";
+        } else {
+          statusText.textContent = "⏳ Widget loading...";
+          statusText.style.color = "#ffff00";
+        }
+      }
+
+      // Check status periodically
+      const statusInterval = setInterval(() => {
+        checkWidgetStatus();
+        if (typeof MetalogicsWidgetAPI !== "undefined") {
+          clearInterval(statusInterval);
+        }
+      }, 1000);
+
+      // Initial status check
+      checkWidgetStatus();
+
+      // Log widget events
+      window.addEventListener("load", function () {
+        console.log("🚀 Demo page loaded");
+
+        setTimeout(() => {
+          if (typeof MetalogicsWidgetAPI !== "undefined") {
+            console.log("✅ Widget API available:", MetalogicsWidgetAPI);
+          } else {
+            console.log("❌ Widget API not found");
+          }
+        }, 3000);
+      });
+    </script>
+
+    <!-- Embed the Metalogics AI Widget -->
+    <script
+      src="./embed.js"
+      data-api-url="https://metabot-ai-production.up.railway.app"
+      data-api-key="wk_ad06e8526e194703c8886e53a7b15ace9a754ad0"
+      data-company-name="Metalogics.io"
+      data-company-logo="M"
+      data-welcome-message="Hello! I'm the Metalogics AI Assistant. I can help you learn about our services, answer questions, and schedule consultations. What would you like to know?"
+      data-position="bottom-right"
+      data-theme="metalogics"
+      data-auto-open="false"
+    ></script>
+  </body>
+</html>
