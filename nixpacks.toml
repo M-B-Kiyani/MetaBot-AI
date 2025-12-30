@@ -5,7 +5,13 @@ nixPkgs = ['nodejs_22', 'npm-9_x']
 cmds = ['npm ci']
 
 [phases.build]
-cmds = ['npm ci --omit=dev --no-cache']
+cmds = [
+  'rm -rf node_modules/.cache',
+  'npm ci --omit=dev --cache /tmp/npm-cache'
+]
 
 [start]
 cmd = 'npm start'
+
+[variables]
+NPM_CONFIG_CACHE = '/tmp/npm-cache'
