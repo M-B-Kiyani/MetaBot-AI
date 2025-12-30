@@ -126,13 +126,13 @@ This implementation plan converts the AI-powered Chat and Voice Booking Assistan
     - Test time zone conversion accuracy
     - _Requirements: 3.5_
 
-- [-] 6. Checkpoint - Core Booking Flow Complete
+- [x] 6. Checkpoint - Core Booking Flow Complete
 
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. HubSpot CRM Integration
+- [x] 7. HubSpot CRM Integration
 
-  - [ ] 7.1 Implement Lead Manager with HubSpot API
+  - [x] 7.1 Implement Lead Manager with HubSpot API
 
     - Install @hubspot/api-client package
     - Create LeadManager class with contact management
@@ -145,7 +145,7 @@ This implementation plan converts the AI-powered Chat and Voice Booking Assistan
     - **Property 7: HubSpot Contact Management**
     - **Validates: Requirements 4.2, 4.3**
 
-  - [ ] 7.3 Add HubSpot error handling and retry logic
+  - [x] 7.3 Add HubSpot error handling and retry logic
 
     - Implement exponential backoff retry logic
     - Add API rate limit handling
@@ -158,7 +158,7 @@ This implementation plan converts the AI-powered Chat and Voice Booking Assistan
     - Test retry logic functionality
     - _Requirements: 4.4_
 
-- [ ] 8. Voice Integration with Retell AI
+- [-] 8. Voice Integration with Retell AI
 
   - [ ] 8.1 Implement Voice Handler service
 
