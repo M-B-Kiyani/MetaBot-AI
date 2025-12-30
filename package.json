@@ -9,7 +9,7 @@
     "build": "echo 'No build step required for Node.js'",
     "test": "jest",
     "test:watch": "jest --watch",
-    "railway:deploy": "npm ci --only=production && npm start"
+    "railway:deploy": "npm ci --omit=dev && npm start"
   },
   "keywords": [
     "ai",
