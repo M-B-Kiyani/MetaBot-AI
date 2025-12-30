@@ -8,6 +8,21 @@
 // Load environment variables first
 require("dotenv").config();
 
+// In production, also try to load from env.production file
+if (
+  process.env.NODE_ENV === "production" ||
+  process.env.RAILWAY_DEPLOYMENT_ID
+) {
+  const path = require("path");
+  const fs = require("fs");
+
+  const prodEnvPath = path.join(__dirname, "env.production");
+  if (fs.existsSync(prodEnvPath)) {
+    console.log("Loading production environment variables from env.production");
+    require("dotenv").config({ path: prodEnvPath });
+  }
+}
+
 // Initialize production optimizations
 const { initializeProductionOptimizations } = require("./config/production");
 initializeProductionOptimizations();

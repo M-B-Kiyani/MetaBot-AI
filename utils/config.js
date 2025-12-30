@@ -14,9 +14,17 @@ class ConfigValidator {
 
       // API Keys (required in production)
       GEMINI_API_KEY: { type: "string", required: false, sensitive: true },
-      HUBSPOT_API_KEY: { type: "string", required: false, sensitive: true },
+      HUBSPOT_PERSONAL_ACCESS_KEY: {
+        type: "string",
+        required: false,
+        sensitive: true,
+      },
       GOOGLE_SERVICE_ACCOUNT_EMAIL: { type: "string", required: false },
-      GOOGLE_PRIVATE_KEY: { type: "string", required: false, sensitive: true },
+      GOOGLE_SERVICE_ACCOUNT_KEY: {
+        type: "string",
+        required: false,
+        sensitive: true,
+      },
       GOOGLE_CALENDAR_ID: { type: "string", required: false },
 
       // Optional API Keys
@@ -174,9 +182,9 @@ class ConfigValidator {
       // In production, all API keys must be provided
       const productionRequired = [
         "GEMINI_API_KEY",
-        "HUBSPOT_API_KEY",
+        "HUBSPOT_PERSONAL_ACCESS_KEY", // Changed from HUBSPOT_API_KEY
         "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-        "GOOGLE_PRIVATE_KEY",
+        "GOOGLE_SERVICE_ACCOUNT_KEY", // Changed from GOOGLE_PRIVATE_KEY
         "GOOGLE_CALENDAR_ID",
       ];
 
@@ -196,9 +204,9 @@ class ConfigValidator {
       // In development, warn about missing API keys but don't fail
       const developmentOptional = [
         "GEMINI_API_KEY",
-        "HUBSPOT_API_KEY",
+        "HUBSPOT_PERSONAL_ACCESS_KEY", // Changed from HUBSPOT_API_KEY
         "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-        "GOOGLE_PRIVATE_KEY",
+        "GOOGLE_SERVICE_ACCOUNT_KEY", // Changed from GOOGLE_PRIVATE_KEY
         "GOOGLE_CALENDAR_ID",
       ];
 
@@ -211,11 +219,11 @@ class ConfigValidator {
       }
     }
 
-    // Validate Google Private Key format if provided
-    if (process.env.GOOGLE_PRIVATE_KEY) {
+    // Validate Google Service Account Key format if provided
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       try {
         // Try to parse as JSON or check if it's a proper private key format
-        const key = process.env.GOOGLE_PRIVATE_KEY;
+        const key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
         if (
           !key.includes("BEGIN PRIVATE KEY") &&
           !key.includes("BEGIN RSA PRIVATE KEY")
@@ -225,7 +233,7 @@ class ConfigValidator {
         }
       } catch (error) {
         this.errors.push(
-          "GOOGLE_PRIVATE_KEY must be a valid private key or JSON string"
+          "GOOGLE_SERVICE_ACCOUNT_KEY must be a valid private key or JSON string"
         );
       }
     }
