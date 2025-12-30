@@ -72,9 +72,11 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     // Check if origin is in allowed list
-    const allowedOrigins = config
-      .get("CORS_ORIGINS", "http://localhost:3000")
-      .split(",");
+    const allowedOrigins = (
+      config.get("CORS_ORIGINS") ||
+      config.get("ALLOWED_ORIGINS") ||
+      "http://localhost:3000"
+    ).split(",");
 
     // For widget embedding, allow all origins in development
     if (config.isDevelopment()) {

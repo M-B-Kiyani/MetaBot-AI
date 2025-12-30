@@ -7,6 +7,8 @@
 (function () {
   "use strict";
 
+  console.log("🚀 Metalogics Widget Embed Script Loading...");
+
   // Get the current script tag to read data attributes
   const currentScript =
     document.currentScript ||
@@ -34,6 +36,32 @@
     autoOpen: currentScript.getAttribute("data-auto-open") === "true",
   };
 
+  console.log("🔧 Widget Configuration:", config);
+
+  // Test API connection before loading widget
+  async function testConnection() {
+    try {
+      console.log("🔧 Testing API connection...");
+      const response = await fetch(`${config.apiUrl}/api/health`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        console.log("✅ API connection successful");
+        return true;
+      } else {
+        console.warn("⚠️ API health check failed:", response.status);
+        return false;
+      }
+    } catch (error) {
+      console.warn("⚠️ API connection test failed:", error.message);
+      return false;
+    }
+  }
+
   // Load the main widget script
   function loadWidget() {
     // Set global config for the widget
@@ -44,19 +72,37 @@
     script.src = currentScript.src.replace("embed.js", "wordpress-widget.js");
     script.async = true;
     script.onload = function () {
-      console.log("✅ Metalogics AI Widget loaded via embed script");
+      console.log("✅ Metalogics AI Widget loaded successfully");
     };
     script.onerror = function () {
-      console.error("❌ Failed to load Metalogics AI Widget");
+      console.error("❌ Failed to load Metalogics AI Widget script");
     };
 
     document.head.appendChild(script);
   }
 
-  // Load when DOM is ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadWidget);
-  } else {
+  // Initialize widget
+  async function initializeWidget() {
+    console.log("🔧 Initializing widget...");
+
+    // Test connection first
+    const connectionOk = await testConnection();
+    if (!connectionOk) {
+      console.warn(
+        "⚠️ API connection issues detected, but loading widget anyway"
+      );
+    }
+
+    // Load widget regardless of connection test result
     loadWidget();
   }
+
+  // Load when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeWidget);
+  } else {
+    initializeWidget();
+  }
+
+  console.log("🚀 Embed script initialized");
 })();
