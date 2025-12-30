@@ -23,11 +23,15 @@ class LeadManager {
    */
   initializeClient() {
     try {
-      const apiKey = process.env.HUBSPOT_API_KEY;
+      // Try multiple possible environment variable names for HubSpot access token
+      const apiKey =
+        process.env.HUBSPOT_ACCESS_TOKEN ||
+        process.env.HUBSPOT_API_KEY ||
+        process.env.HUBSPOT_PERSONAL_ACCESS_KEY;
 
       if (!apiKey) {
         console.warn(
-          "HubSpot API key not found. Lead management will be disabled."
+          "HubSpot access token not found. Lead management will be disabled."
         );
         return;
       }

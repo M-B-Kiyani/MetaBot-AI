@@ -14,6 +14,16 @@ class ConfigValidator {
 
       // API Keys (required in production)
       GEMINI_API_KEY: { type: "string", required: false, sensitive: true },
+      HUBSPOT_ACCESS_TOKEN: {
+        type: "string",
+        required: false,
+        sensitive: true,
+      },
+      HUBSPOT_API_KEY: {
+        type: "string",
+        required: false,
+        sensitive: true,
+      },
       HUBSPOT_PERSONAL_ACCESS_KEY: {
         type: "string",
         required: false,
@@ -182,7 +192,7 @@ class ConfigValidator {
       // In production, all API keys must be provided
       const productionRequired = [
         "GEMINI_API_KEY",
-        "HUBSPOT_PERSONAL_ACCESS_KEY", // Changed from HUBSPOT_API_KEY
+        "HUBSPOT_ACCESS_TOKEN", // Primary HubSpot access token
         "GOOGLE_SERVICE_ACCOUNT_EMAIL",
         "GOOGLE_SERVICE_ACCOUNT_KEY", // Changed from GOOGLE_PRIVATE_KEY
         "GOOGLE_CALENDAR_ID",
@@ -204,7 +214,7 @@ class ConfigValidator {
       // In development, warn about missing API keys but don't fail
       const developmentOptional = [
         "GEMINI_API_KEY",
-        "HUBSPOT_PERSONAL_ACCESS_KEY", // Changed from HUBSPOT_API_KEY
+        "HUBSPOT_ACCESS_TOKEN", // Primary HubSpot access token
         "GOOGLE_SERVICE_ACCOUNT_EMAIL",
         "GOOGLE_SERVICE_ACCOUNT_KEY", // Changed from GOOGLE_PRIVATE_KEY
         "GOOGLE_CALENDAR_ID",
