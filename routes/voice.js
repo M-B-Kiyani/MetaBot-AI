@@ -1,27 +1,9 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
-const VoiceHandler = require("../services/voiceHandler");
-const BookingService = require("../services/bookingService");
-const AIService = require("../services/aiService");
-const CalendarService = require("../services/calendarService");
-const LeadManager = require("../services/leadManager");
+const { serviceManager } = require("../services/serviceManager");
 const logger = require("../utils/logger");
 
 const router = express.Router();
-
-// Initialize services
-const bookingService = new BookingService();
-const aiService = new AIService();
-const calendarService = new CalendarService();
-const leadManager = new LeadManager();
-
-// Initialize voice handler with dependencies
-const voiceHandler = new VoiceHandler(
-  bookingService,
-  aiService,
-  calendarService,
-  leadManager
-);
 
 /**
  * POST /api/voice/webhook
@@ -96,6 +78,9 @@ router.post(
         ip: req.ip,
         timestamp: new Date().toISOString(),
       });
+
+      // Get voice handler from service manager
+      const voiceHandler = serviceManager.getService("voiceHandler");
 
       // Process webhook through voice handler
       const result = await voiceHandler.handleWebhook(
@@ -181,6 +166,8 @@ router.get("/sessions", async (req, res) => {
     // This endpoint might be used for monitoring/debugging
     // In production, you might want to add authentication
 
+    // Get voice handler from service manager
+    const voiceHandler = serviceManager.getService("voiceHandler");
     const activeSessions = voiceHandler.getActiveSessions();
 
     logger.info("Voice sessions requested", {
@@ -238,6 +225,8 @@ router.get("/session/:callId", async (req, res) => {
       });
     }
 
+    // Get voice handler from service manager
+    const voiceHandler = serviceManager.getService("voiceHandler");
     const voiceSession = voiceHandler.getVoiceSession(callId);
 
     if (!voiceSession) {
@@ -310,6 +299,8 @@ router.delete("/session/:callId", async (req, res) => {
       });
     }
 
+    // Get voice handler from service manager
+    const voiceHandler = serviceManager.getService("voiceHandler");
     const sessionExists = voiceHandler.getVoiceSession(callId);
 
     if (!sessionExists) {
@@ -374,6 +365,8 @@ router.post("/cleanup", async (req, res) => {
     // This endpoint can be called periodically to clean up expired sessions
     // In production, this might be triggered by a cron job or scheduled task
 
+    // Get voice handler from service manager
+    const voiceHandler = serviceManager.getService("voiceHandler");
     const beforeCount = voiceHandler.getActiveSessions().length;
 
     voiceHandler.cleanupExpiredSessions();

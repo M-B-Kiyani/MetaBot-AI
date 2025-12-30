@@ -3,6 +3,7 @@ const os = require("os");
 const fs = require("fs").promises;
 const path = require("path");
 const { logger } = require("../utils/logger");
+const { serviceManager } = require("../services/serviceManager");
 const {
   getHealthMetrics,
   getDetailedHealth,
@@ -477,9 +478,130 @@ async function checkFilesystemAccess() {
 }
 
 /**
- * GET /health/startup
- * Railway startup probe - checks if application is ready to serve traffic
+ * GET /health/system
+ * Comprehensive system health including circuit breakers and service manager status
  */
+router.get("/system", async (req, res) => {
+  try {
+    // Get system health from service manager
+    const systemHealth = serviceManager.getSystemHealth();
+
+    // Get detailed health metrics
+    const detailedHealth = getDetailedHealth();
+
+    // Combine all health information
+    const comprehensiveHealth = {
+      status: systemHealth.overallHealth >= 80 ? "healthy" : "degraded",
+      timestamp: new Date().toISOString(),
+      overallHealth: systemHealth.overallHealth,
+      serviceManager: {
+        initialized: systemHealth.initialized,
+        services: systemHealth.services,
+        circuitBreakers: systemHealth.circuitBreakers,
+      },
+      system: {
+        uptime: process.uptime(),
+        memory: {
+          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          limit: Math.round(os.totalmem() / 1024 / 1024),
+          usage: Math.round(
+            (process.memoryUsage().heapUsed / os.totalmem()) * 100
+          ),
+        },
+        cpu: {
+          usage: process.cpuUsage(),
+          loadAverage: os.loadavg()[0],
+        },
+        platform: os.platform(),
+        nodeVersion: process.version,
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        port: process.env.PORT,
+        railway: {
+          deployment: process.env.RAILWAY_DEPLOYMENT_ID || null,
+          service: process.env.RAILWAY_SERVICE_NAME || null,
+          environment: process.env.RAILWAY_ENVIRONMENT || null,
+        },
+      },
+      degradationStatus: {
+        circuitBreakersOpen: Object.values(systemHealth.circuitBreakers).filter(
+          (cb) => cb.state === "OPEN"
+        ).length,
+        servicesUnhealthy: Object.values(systemHealth.services).filter(
+          (service) => !service.healthy
+        ).length,
+        fallbacksActive: Object.values(systemHealth.circuitBreakers).some(
+          (cb) => cb.state !== "CLOSED"
+        ),
+      },
+    };
+
+    // Log system health check
+    logger.info("System health check", {
+      overallHealth: comprehensiveHealth.overallHealth,
+      circuitBreakersOpen:
+        comprehensiveHealth.degradationStatus.circuitBreakersOpen,
+      servicesUnhealthy:
+        comprehensiveHealth.degradationStatus.servicesUnhealthy,
+      ip: req.ip,
+    });
+
+    const statusCode = comprehensiveHealth.status === "healthy" ? 200 : 503;
+    res.status(statusCode).json(comprehensiveHealth);
+  } catch (error) {
+    logger.error("System health check failed", {
+      error: error.message,
+      stack: error.stack,
+      ip: req.ip,
+    });
+
+    res.status(503).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      error: "System health check failed",
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * POST /health/circuit-breaker/:service/reset
+ * Reset a circuit breaker for a specific service
+ */
+router.post("/circuit-breaker/:service/reset", (req, res) => {
+  try {
+    const { service } = req.params;
+
+    // Reset the circuit breaker
+    serviceManager.resetCircuitBreaker(service);
+
+    logger.info("Circuit breaker reset", {
+      service,
+      ip: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    res.json({
+      success: true,
+      message: `Circuit breaker for ${service} has been reset`,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error("Circuit breaker reset failed", {
+      service: req.params.service,
+      error: error.message,
+      ip: req.ip,
+    });
+
+    res.status(400).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 router.get("/startup", async (req, res) => {
   try {
     // Check if all essential services are initialized

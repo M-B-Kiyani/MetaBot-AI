@@ -11,6 +11,9 @@ try {
   process.exit(1);
 }
 
+// Initialize service manager
+const { serviceManager } = require("./services/serviceManager");
+
 const errorHandler = require("./middleware/errorHandler");
 const {
   sanitizeInput,
@@ -160,10 +163,60 @@ app.get("/", (req, res) => {
   });
 });
 
-// API Routes
-app.use("/api/chat", require("./routes/chat"));
-app.use("/api/booking", require("./routes/booking"));
-app.use("/api/voice", require("./routes/voice"));
+// API Routes - Initialize after service manager is ready
+app.use(
+  "/api/chat",
+  (req, res, next) => {
+    if (!serviceManager.initialized) {
+      return res.status(503).json({
+        success: false,
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "Services are initializing, please try again shortly",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+    next();
+  },
+  require("./routes/chat")
+);
+
+app.use(
+  "/api/booking",
+  (req, res, next) => {
+    if (!serviceManager.initialized) {
+      return res.status(503).json({
+        success: false,
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "Services are initializing, please try again shortly",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+    next();
+  },
+  require("./routes/booking")
+);
+
+app.use(
+  "/api/voice",
+  (req, res, next) => {
+    if (!serviceManager.initialized) {
+      return res.status(503).json({
+        success: false,
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: "Services are initializing, please try again shortly",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+    next();
+  },
+  require("./routes/voice")
+);
 
 // Widget routes
 app.use("/widget", require("./routes/widget"));
@@ -188,24 +241,53 @@ app.use(errorTracking);
 app.use(errorHandler);
 
 // Graceful shutdown handling
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM received, shutting down gracefully");
-  process.exit(0);
-});
+const gracefulShutdown = async (signal) => {
+  logger.info(`${signal} received, shutting down gracefully`);
 
-process.on("SIGINT", () => {
-  logger.info("SIGINT received, shutting down gracefully");
-  process.exit(0);
-});
-
-// Only start server if this file is run directly (not imported for testing)
-if (require.main === module) {
-  app.listen(PORT, () => {
-    logger.info(`AI Booking Assistant server running on port ${PORT}`, {
-      environment: config.get("NODE_ENV", "development"),
-      port: PORT,
+  try {
+    // Shutdown service manager
+    await serviceManager.shutdown();
+    logger.info("Service manager shutdown completed");
+  } catch (error) {
+    logger.error("Error during service manager shutdown", {
+      error: error.message,
     });
-  });
+  }
+
+  process.exit(0);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// Initialize services and start server
+async function startServer() {
+  try {
+    // Initialize service manager
+    logger.info("Initializing service manager...");
+    await serviceManager.initialize();
+    logger.info("Service manager initialized successfully");
+
+    // Only start server if this file is run directly (not imported for testing)
+    if (require.main === module) {
+      app.listen(PORT, () => {
+        logger.info(`AI Booking Assistant server running on port ${PORT}`, {
+          environment: config.get("NODE_ENV", "development"),
+          port: PORT,
+          servicesInitialized: serviceManager.initialized,
+        });
+      });
+    }
+  } catch (error) {
+    logger.error("Failed to start server", {
+      error: error.message,
+      stack: error.stack,
+    });
+    process.exit(1);
+  }
 }
+
+// Start the server
+startServer();
 
 module.exports = app;

@@ -1,8 +1,6 @@
 const express = require("express");
 const { body, query, validationResult } = require("express-validator");
-const BookingService = require("../services/bookingService");
-const CalendarService = require("../services/calendarService");
-const LeadManager = require("../services/leadManager");
+const { serviceManager } = require("../services/serviceManager");
 const logger = require("../utils/logger");
 const { widgetMiddleware } = require("../middleware/widgetAuth");
 
@@ -10,11 +8,6 @@ const router = express.Router();
 
 // Apply widget authentication middleware to all routes
 router.use(widgetMiddleware);
-
-// Initialize services
-const bookingService = new BookingService();
-const calendarService = new CalendarService();
-const leadManager = new LeadManager();
 
 /**
  * POST /api/booking
@@ -96,6 +89,9 @@ router.post(
         ip: req.ip,
       });
 
+      // Get services from service manager
+      const bookingService = serviceManager.getService("bookingService");
+
       // Create the booking
       const bookingResult = bookingService.createBooking(bookingData);
 
@@ -118,7 +114,7 @@ router.post(
 
       const booking = bookingResult.booking;
 
-      // Process integrations in parallel
+      // Process integrations in parallel with circuit breaker protection
       const integrationResults = await processBookingIntegrations(booking);
 
       // Update booking status to confirmed if integrations succeeded
@@ -233,6 +229,9 @@ router.get(
         ip: req.ip,
       });
 
+      // Get services from service manager
+      const bookingService = serviceManager.getService("bookingService");
+
       // Check if date is in the past
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -321,6 +320,9 @@ router.get("/:bookingId", async (req, res) => {
       });
     }
 
+    // Get services from service manager
+    const bookingService = serviceManager.getService("bookingService");
+
     const booking = bookingService.getBooking(bookingId);
 
     if (!booking) {
@@ -405,6 +407,9 @@ router.put(
       const { bookingId } = req.params;
       const { status } = req.body;
 
+      // Get services from service manager
+      const bookingService = serviceManager.getService("bookingService");
+
       const booking = bookingService.getBooking(bookingId);
       if (!booking) {
         return res.status(404).json({
@@ -471,7 +476,7 @@ router.put(
 );
 
 /**
- * Process booking integrations with Calendar and HubSpot
+ * Process booking integrations with Calendar and HubSpot using circuit breaker protection
  * @param {Object} booking - Booking object
  * @returns {Object} - Integration results
  */
@@ -481,10 +486,15 @@ async function processBookingIntegrations(booking) {
     hubspot: { success: false, error: null, contactId: null },
   };
 
-  // Calendar integration
+  // Calendar integration with circuit breaker protection
   try {
     logger.info(`Creating calendar event for booking: ${booking.id}`);
-    const calendarResult = await calendarService.createEvent(booking);
+
+    const calendarResult = await serviceManager.executeServiceMethod(
+      "calendarService",
+      "createEvent",
+      booking
+    );
 
     if (calendarResult.success) {
       integrationResults.calendar.success = true;
@@ -503,13 +513,22 @@ async function processBookingIntegrations(booking) {
     }
   } catch (error) {
     integrationResults.calendar.error = error.message;
-    logger.error("Error creating calendar event:", error);
+    logger.error("Error creating calendar event:", {
+      error: error.message,
+      circuitBreakerOpen: error.circuitBreakerOpen || false,
+      bookingId: booking.id,
+    });
   }
 
-  // HubSpot integration
+  // HubSpot integration with circuit breaker protection
   try {
     logger.info(`Creating HubSpot contact for booking: ${booking.email}`);
-    const hubspotResult = await leadManager.createOrUpdateContact(booking);
+
+    const hubspotResult = await serviceManager.executeServiceMethod(
+      "leadManager",
+      "createOrUpdateContact",
+      booking
+    );
 
     if (hubspotResult.success) {
       integrationResults.hubspot.success = true;
@@ -529,7 +548,11 @@ async function processBookingIntegrations(booking) {
     }
   } catch (error) {
     integrationResults.hubspot.error = error.message;
-    logger.error("Error creating HubSpot contact:", error);
+    logger.error("Error creating HubSpot contact:", {
+      error: error.message,
+      circuitBreakerOpen: error.circuitBreakerOpen || false,
+      bookingId: booking.id,
+    });
   }
 
   return integrationResults;

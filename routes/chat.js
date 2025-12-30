@@ -1,7 +1,6 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
-const AIService = require("../services/aiService");
-const BookingService = require("../services/bookingService");
+const { serviceManager } = require("../services/serviceManager");
 const logger = require("../utils/logger");
 const { widgetMiddleware } = require("../middleware/widgetAuth");
 
@@ -9,10 +8,6 @@ const router = express.Router();
 
 // Apply widget authentication middleware to all routes
 router.use(widgetMiddleware);
-
-// Initialize services
-const aiService = new AIService();
-const bookingService = new BookingService();
 
 /**
  * POST /api/chat
@@ -67,12 +62,25 @@ router.post(
         ip: req.ip,
       });
 
-      // Check for booking intent
-      const isBookingIntent = await aiService.isBookingIntent(message);
+      // Get services from service manager
+      const aiService = serviceManager.getService("aiService");
+      const bookingService = serviceManager.getService("bookingService");
+
+      // Check for booking intent with circuit breaker protection
+      const isBookingIntent = await serviceManager.executeServiceMethod(
+        "aiService",
+        "isBookingIntent",
+        message
+      );
 
       if (isBookingIntent) {
-        // Handle booking flow
-        const extractedInfo = await aiService.extractBookingInfo(message);
+        // Handle booking flow with circuit breaker protection
+        const extractedInfo = await serviceManager.executeServiceMethod(
+          "aiService",
+          "extractBookingInfo",
+          message
+        );
+
         const bookingResponse = bookingService.processBookingStep(
           sessionId,
           message,
@@ -155,8 +163,13 @@ router.post(
         });
       }
 
-      // Generate regular AI response
-      const aiResponse = await aiService.generateResponse(message, sessionId);
+      // Generate regular AI response with circuit breaker protection
+      const aiResponse = await serviceManager.executeServiceMethod(
+        "aiService",
+        "generateResponse",
+        message,
+        sessionId
+      );
 
       logger.info("AI response generated", {
         sessionId,
@@ -177,16 +190,28 @@ router.post(
         stack: error.stack,
         sessionId: req.body?.sessionId,
         ip: req.ip,
+        circuitBreakerOpen: error.circuitBreakerOpen || false,
       });
 
       // Return fallback response
-      const fallbackResponse = aiService.getFallbackResponse();
+      let fallbackResponse;
+      try {
+        const aiService = serviceManager.getService("aiService");
+        fallbackResponse = aiService.getFallbackResponse();
+      } catch (fallbackError) {
+        fallbackResponse =
+          "I'm sorry, I'm currently experiencing technical difficulties. Please try again later or contact us at hello@metalogics.io.";
+      }
 
       return res.status(500).json({
         success: false,
         error: {
-          code: "INTERNAL_ERROR",
-          message: "Unable to process your message at this time",
+          code: error.circuitBreakerOpen
+            ? "SERVICE_CIRCUIT_OPEN"
+            : "INTERNAL_ERROR",
+          message: error.circuitBreakerOpen
+            ? "Service temporarily unavailable due to high error rate"
+            : "Unable to process your message at this time",
           timestamp: new Date().toISOString(),
         },
         response: {
@@ -229,6 +254,10 @@ router.post(
       }
 
       const { sessionId } = req.body;
+
+      // Get services from service manager
+      const aiService = serviceManager.getService("aiService");
+      const bookingService = serviceManager.getService("bookingService");
 
       // Clear AI conversation context
       aiService.clearContext(sessionId);
@@ -280,6 +309,10 @@ router.get("/context/:sessionId", async (req, res) => {
         },
       });
     }
+
+    // Get services from service manager
+    const aiService = serviceManager.getService("aiService");
+    const bookingService = serviceManager.getService("bookingService");
 
     const context = aiService.getContext(sessionId);
     const bookingState = bookingService.getBookingState(sessionId);
