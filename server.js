@@ -53,10 +53,11 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Start server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   logger.info(`AI Booking Assistant server running on port ${PORT}`, {
     environment: config.get("NODE_ENV", "development"),
     port: PORT,
+    host: "0.0.0.0",
     nodeVersion: process.version,
     platform: process.platform,
     railway: {

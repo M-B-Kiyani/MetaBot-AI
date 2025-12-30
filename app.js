@@ -272,10 +272,11 @@ async function startServer() {
 
     // Only start server if this file is run directly (not imported for testing)
     if (require.main === module) {
-      app.listen(PORT, () => {
+      app.listen(PORT, "0.0.0.0", () => {
         logger.info(`AI Booking Assistant server running on port ${PORT}`, {
           environment: config.get("NODE_ENV", "development"),
           port: PORT,
+          host: "0.0.0.0",
           servicesInitialized: serviceManager.initialized,
         });
       });
