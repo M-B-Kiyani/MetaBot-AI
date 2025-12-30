@@ -1,4 +1,9 @@
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
+
+// Generate UUID v4 using crypto module
+function generateUUID() {
+  return crypto.randomUUID();
+}
 
 class BookingService {
   constructor() {
@@ -196,7 +201,7 @@ class BookingService {
 
     // Create booking object
     const booking = {
-      id: uuidv4(),
+      id: generateUUID(),
       name: bookingData.name.trim(),
       email: bookingData.email.trim().toLowerCase(),
       company: bookingData.company.trim(),

@@ -10,6 +10,14 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.railway
+env.production
+*.env.backup
+*.env.bak
+
+# Railway setup scripts (contain sensitive data)
+railway-setup.sh
+railway-setup.bat
 
 # Logs
 logs/
@@ -47,6 +55,10 @@ jspm_packages/
 # dotenv environment variables file
 .env
 
+# Railway deployment files (keep templates, exclude actual configs)
+railway.toml
+.railway/
+
 # IDE files
 .vscode/
 .idea/
@@ -66,3 +78,8 @@ Thumbs.db
 # Build directories
 dist/
 build/
+
+# Temporary files
+.tmp/
+temp/
+.health-check-temp

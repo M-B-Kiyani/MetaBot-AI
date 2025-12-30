@@ -127,7 +127,9 @@ if (process.env.NODE_ENV === "production" || process.env.LOG_FILE_PATH) {
 
 // Create logger instance
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
+  level:
+    process.env.LOG_LEVEL ||
+    (process.env.NODE_ENV === "production" ? "warn" : "info"),
   levels,
   format: winston.format.json(),
   transports,

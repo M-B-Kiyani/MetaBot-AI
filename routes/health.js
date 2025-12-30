@@ -20,18 +20,56 @@ let serviceHealthCache = {
 /**
  * GET /health
  * Basic health check endpoint with monitoring metrics
+ * Optimized for Railway platform health checks
  */
 router.get("/", (req, res) => {
   try {
     const healthData = getHealthMetrics();
 
-    logger.info("Health check requested", {
-      ip: req.ip,
+    // Railway-specific optimizations
+    const railwayHealth = {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
       uptime: healthData.uptime,
-      requestId: req.requestId,
-    });
+      version: process.env.npm_package_version || "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+      // Railway uses this for health checks
+      railway: {
+        deployment: process.env.RAILWAY_DEPLOYMENT_ID || "unknown",
+        service: process.env.RAILWAY_SERVICE_NAME || "ai-booking-assistant",
+        environment: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV,
+      },
+      // Essential metrics for Railway monitoring
+      metrics: {
+        memory: {
+          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          limit: Math.round(os.totalmem() / 1024 / 1024),
+        },
+        cpu: {
+          usage: process.cpuUsage(),
+          loadAverage: os.loadavg()[0],
+        },
+        uptime: process.uptime(),
+      },
+    };
 
-    res.status(200).json(healthData);
+    // Log health check in production with minimal details
+    if (process.env.NODE_ENV === "production") {
+      logger.info("Health check", {
+        status: "healthy",
+        uptime: railwayHealth.uptime,
+        memory: railwayHealth.metrics.memory.used,
+      });
+    } else {
+      logger.info("Health check requested", {
+        ip: req.ip,
+        uptime: healthData.uptime,
+        requestId: req.requestId,
+      });
+    }
+
+    res.status(200).json(railwayHealth);
   } catch (error) {
     logger.error("Health check failed", {
       error: error.message,
@@ -43,6 +81,10 @@ router.get("/", (req, res) => {
       status: "unhealthy",
       timestamp: new Date().toISOString(),
       error: "Health check failed",
+      railway: {
+        deployment: process.env.RAILWAY_DEPLOYMENT_ID || "unknown",
+        service: process.env.RAILWAY_SERVICE_NAME || "ai-booking-assistant",
+      },
     });
   }
 });
@@ -433,5 +475,58 @@ async function checkFilesystemAccess() {
     return false;
   }
 }
+
+/**
+ * GET /health/startup
+ * Railway startup probe - checks if application is ready to serve traffic
+ */
+router.get("/startup", async (req, res) => {
+  try {
+    // Check if all essential services are initialized
+    const startupChecks = {
+      server: true, // If we're responding, server is started
+      environment: checkEnvironmentVariables(),
+      filesystem: await checkFilesystemAccess(),
+      dependencies: await checkDependencyHealth(),
+      // Check if critical services are configured (not necessarily healthy)
+      services: {
+        gemini: !!process.env.GEMINI_API_KEY,
+        hubspot: !!process.env.HUBSPOT_API_KEY,
+        calendar: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        retell: !!process.env.RETELL_API_KEY,
+      },
+    };
+
+    const isStarted =
+      startupChecks.server &&
+      startupChecks.environment &&
+      startupChecks.filesystem &&
+      startupChecks.dependencies.status === "healthy";
+
+    const status = isStarted ? 200 : 503;
+
+    res.status(status).json({
+      status: isStarted ? "started" : "starting",
+      timestamp: new Date().toISOString(),
+      checks: startupChecks,
+      railway: {
+        deployment: process.env.RAILWAY_DEPLOYMENT_ID || "unknown",
+        service: process.env.RAILWAY_SERVICE_NAME || "ai-booking-assistant",
+        environment: process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV,
+      },
+    });
+  } catch (error) {
+    logger.error("Startup check failed", {
+      error: error.message,
+      ip: req.ip,
+    });
+
+    res.status(503).json({
+      status: "failed",
+      timestamp: new Date().toISOString(),
+      error: error.message,
+    });
+  }
+});
 
 module.exports = router;
