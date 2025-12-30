@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs").promises;
 const path = require("path");
+const { logApiCall, logError, logBusinessEvent } = require("../utils/logger");
 
 class AIService {
   constructor() {
@@ -101,7 +102,16 @@ class AIService {
    * Generate AI response using Gemini API with knowledge base context
    */
   async generateResponse(message, sessionId = "default") {
+    const startTime = Date.now();
+
     try {
+      // Log the AI request
+      logBusinessEvent("AI Request", {
+        sessionId,
+        messageLength: message.length,
+        hasContext: this.conversationContexts.has(sessionId),
+      });
+
       // Get or create conversation context
       let context = this.conversationContexts.get(sessionId) || [];
 
@@ -131,6 +141,19 @@ Respond as the Metalogics.io assistant:`;
       const result = await this.model.generateContent(systemPrompt);
       const response = result.response.text();
 
+      const duration = Date.now() - startTime;
+
+      // Log successful API call
+      logApiCall("Gemini", "POST", "generateContent", duration, true);
+
+      // Log business event
+      logBusinessEvent("AI Response Generated", {
+        sessionId,
+        responseLength: response.length,
+        duration,
+        knowledgeSourcesUsed: relevantKnowledge.length,
+      });
+
       // Update conversation context
       context.push({ role: "user", content: message, timestamp: new Date() });
       context.push({
@@ -148,7 +171,19 @@ Respond as the Metalogics.io assistant:`;
 
       return response;
     } catch (error) {
-      console.error("Error generating AI response:", error);
+      const duration = Date.now() - startTime;
+
+      // Log failed API call
+      logApiCall("Gemini", "POST", "generateContent", duration, false, error);
+
+      // Log error with context
+      logError(error, {
+        operation: "generateResponse",
+        sessionId,
+        messageLength: message.length,
+        duration,
+      });
+
       return this.handleServiceFailure(message, sessionId);
     }
   }

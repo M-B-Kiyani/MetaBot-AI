@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Widget Test Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 6px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 Widget Test Page</h1>
+
+      <div class="test-section">
+        <h3>Widget Status</h3>
+        <p>This page tests the Metalogics AI widget embedding functionality.</p>
+        <p>The widget should appear in the bottom-right corner of the page.</p>
+      </div>
+
+      <div class="test-section">
+        <h3>Widget Controls</h3>
+        <button onclick="testWidgetAPI('open')">Open Widget</button>
+        <button onclick="testWidgetAPI('close')">Close Widget</button>
+        <button onclick="testWidgetAPI('message')">Send Test Message</button>
+      </div>
+
+      <div class="test-section">
+        <h3>Test Content</h3>
+        <p>
+          This is some test content to demonstrate that the widget doesn't
+          interfere with the page layout.
+        </p>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
+          eiusmod tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      function testWidgetAPI(action) {
+        if (typeof MetalogicsWidgetAPI === "undefined") {
+          alert(
+            "Widget API not available yet. Please wait for the widget to load."
+          );
+          return;
+        }
+
+        switch (action) {
+          case "open":
+            MetalogicsWidgetAPI.open();
+            break;
+          case "close":
+            MetalogicsWidgetAPI.close();
+            break;
+          case "message":
+            MetalogicsWidgetAPI.sendMessage(
+              "Hello from the test page! Can you tell me about Metalogics services?"
+            );
+            break;
+        }
+      }
+
+      // Log when widget loads
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          if (typeof MetalogicsWidgetAPI !== "undefined") {
+            console.log("✅ Widget API loaded successfully");
+          } else {
+            console.log("❌ Widget API not found");
+          }
+        }, 2000);
+      });
+    </script>
+
+    <!-- Embed the widget -->
+    <script
+      src="http://localhost:3000/embed.js"
+      data-api-url="http://localhost:3000"
+      data-api-key="demo_key_12345"
+      data-theme="default"
+      data-welcome-message="Hello! I'm testing the widget. Ask me about Metalogics services!"
+    ></script>
+  </body>
+</html>

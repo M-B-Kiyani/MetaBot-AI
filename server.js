@@ -5,15 +5,27 @@
  * This file is used to start the server in production
  */
 
+// Load environment variables first
+require("dotenv").config();
+
+// Validate configuration before starting
+const { validateConfig, config } = require("./utils/config");
+try {
+  validateConfig();
+} catch (error) {
+  console.error("Configuration validation failed:", error.message);
+  process.exit(1);
+}
+
 const app = require("./app");
 const logger = require("./utils/logger");
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.get("PORT", 3000);
 
 // Start server
 const server = app.listen(PORT, () => {
   logger.info(`AI Booking Assistant server running on port ${PORT}`, {
-    environment: process.env.NODE_ENV || "development",
+    environment: config.get("NODE_ENV", "development"),
     port: PORT,
   });
 });

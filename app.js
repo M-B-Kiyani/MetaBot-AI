@@ -2,6 +2,15 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+// Validate configuration before starting the application
+const { validateConfig, config } = require("./utils/config");
+try {
+  validateConfig();
+} catch (error) {
+  console.error("Configuration validation failed:", error.message);
+  process.exit(1);
+}
+
 const errorHandler = require("./middleware/errorHandler");
 const {
   sanitizeInput,
@@ -20,10 +29,14 @@ const {
   requestTimeout,
   securityEventLogger,
 } = require("./middleware/security");
-const logger = require("./utils/logger");
+const { logger, requestLogger } = require("./utils/logger");
+const {
+  performanceMonitoring,
+  errorTracking,
+} = require("./middleware/monitoring");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = config.get("PORT", 3000);
 
 // Trust proxy for accurate IP addresses (important for rate limiting)
 app.set("trust proxy", 1);
@@ -51,13 +64,44 @@ app.use(requestTimeout(30000));
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(",")
-    : ["http://localhost:3000"],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in allowed list
+    const allowedOrigins = config
+      .get("CORS_ORIGINS", "http://localhost:3000")
+      .split(",");
+
+    // For widget embedding, allow all origins in development
+    if (config.isDevelopment()) {
+      return callback(null, true);
+    }
+
+    // In production, check against allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
+      return callback(null, true);
+    }
+
+    // For widget routes, be more permissive
+    if (
+      origin &&
+      (origin.includes("localhost") || origin.includes("127.0.0.1"))
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-API-Key",
+    "X-Widget-Origin",
+  ],
 };
 app.use(cors(corsOptions));
 
@@ -70,6 +114,11 @@ app.use(validateContentType);
 // Request size validation
 app.use(validateRequestSize);
 
+// Serve static files for widget
+app.use("/widget.css", express.static("public/widget.css"));
+app.use("/widget.js", express.static("public/widget.js"));
+app.use("/embed.js", express.static("public/embed.js"));
+
 // Body parsing middleware with input sanitization
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -77,28 +126,13 @@ app.use(express.urlencoded({ extended: true }));
 // Input sanitization (applied after body parsing)
 app.use(sanitizeInput);
 
-// Request logging middleware (moved after body parsing for complete request info)
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`, {
-    ip: req.ip,
-    userAgent: req.get("User-Agent"),
-    body: req.method !== "GET" ? Object.keys(req.body || {}) : undefined,
-    timestamp: new Date().toISOString(),
-  });
-  next();
-});
+// Enhanced request logging middleware
+app.use(requestLogger);
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || "development",
-  });
-});
+// Performance monitoring
+app.use(performanceMonitoring);
 
-// API status endpoint
+// API status endpoint (keep for backward compatibility)
 app.get("/api/status", (req, res) => {
   res.status(200).json({
     service: "AI Booking Assistant",
@@ -108,10 +142,34 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-// Routes will be added here as they are implemented
-// app.use('/api/chat', require('./routes/chat'));
-// app.use('/api/booking', require('./routes/booking'));
-// app.use('/api/voice', require('./routes/voice'));
+// Root endpoint with API information
+app.get("/", (req, res) => {
+  res.status(200).json({
+    service: "AI Booking Assistant",
+    version: "1.0.0",
+    status: "operational",
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: "/health",
+      detailedHealth: "/health/detailed",
+      chat: "/api/chat",
+      booking: "/api/booking",
+      voice: "/api/voice/webhook",
+      status: "/api/status",
+    },
+  });
+});
+
+// API Routes
+app.use("/api/chat", require("./routes/chat"));
+app.use("/api/booking", require("./routes/booking"));
+app.use("/api/voice", require("./routes/voice"));
+
+// Widget routes
+app.use("/widget", require("./routes/widget"));
+
+// Health and monitoring routes
+app.use("/health", require("./routes/health"));
 
 // 404 handler
 app.use("*", (req, res) => {
@@ -126,6 +184,7 @@ app.use("*", (req, res) => {
 });
 
 // Error handling middleware (must be last)
+app.use(errorTracking);
 app.use(errorHandler);
 
 // Graceful shutdown handling
@@ -143,7 +202,7 @@ process.on("SIGINT", () => {
 if (require.main === module) {
   app.listen(PORT, () => {
     logger.info(`AI Booking Assistant server running on port ${PORT}`, {
-      environment: process.env.NODE_ENV || "development",
+      environment: config.get("NODE_ENV", "development"),
       port: PORT,
     });
   });
