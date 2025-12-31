@@ -66,20 +66,167 @@ router.post(
       const aiService = serviceManager.getService("aiService");
       const bookingService = serviceManager.getService("bookingService");
 
-      // Check for booking intent with circuit breaker protection
-      const isBookingIntent = await serviceManager.executeServiceMethod(
-        "aiService",
-        "isBookingIntent",
-        message
-      );
+      // Check if user is already in a booking flow
+      const existingBookingState = bookingService.getBookingState(sessionId);
 
-      if (isBookingIntent) {
-        // Handle booking flow with circuit breaker protection
-        const extractedInfo = await serviceManager.executeServiceMethod(
+      if (existingBookingState) {
+        // User is already in booking flow - process their response directly
+        logger.info("Processing booking flow continuation", {
+          sessionId,
+          currentStep: existingBookingState.step,
+          isComplete: existingBookingState.isComplete,
+        });
+
+        // Try to extract info with AI, but fallback to direct processing if AI fails
+        let extractedInfo = {};
+        try {
+          extractedInfo = await serviceManager.executeServiceMethod(
+            "aiService",
+            "extractBookingInfo",
+            message,
+            existingBookingState.data || {}
+          );
+        } catch (error) {
+          logger.warn("AI extraction failed, using direct processing", {
+            sessionId,
+            error: error.message,
+          });
+          // Direct processing will happen in bookingService.processBookingStep
+        }
+
+        const bookingResponse = bookingService.processBookingStep(
+          sessionId,
+          message,
+          extractedInfo
+        );
+
+        logger.info("Booking flow step processed", {
+          sessionId,
+          step: bookingResponse.step,
+          isComplete: bookingResponse.isComplete,
+          needsConfirmation: bookingResponse.needsConfirmation,
+        });
+
+        // Handle booking confirmation
+        if (bookingResponse.needsConfirmation) {
+          // Check if user is confirming the booking
+          const confirmationKeywords = [
+            "yes",
+            "confirm",
+            "correct",
+            "right",
+            "good",
+            "ok",
+            "okay",
+            "looks good",
+            "that's right",
+            "perfect",
+            "sounds good",
+          ];
+          const isConfirming = confirmationKeywords.some((keyword) =>
+            message.toLowerCase().includes(keyword)
+          );
+
+          if (isConfirming) {
+            const confirmationResult = bookingService.confirmBooking(sessionId);
+
+            if (confirmationResult.success) {
+              logger.info("Booking confirmed successfully", {
+                sessionId,
+                bookingId: confirmationResult.booking.id,
+              });
+
+              return res.json({
+                success: true,
+                response: {
+                  message: confirmationResult.message,
+                  type: "booking_confirmed",
+                  bookingId: confirmationResult.booking.id,
+                  booking: confirmationResult.booking,
+                },
+                timestamp: new Date().toISOString(),
+              });
+            } else {
+              logger.warn("Booking confirmation failed", {
+                sessionId,
+                error: confirmationResult.message,
+              });
+
+              return res.json({
+                success: true,
+                response: {
+                  message: confirmationResult.message,
+                  type: "booking_error",
+                },
+                timestamp: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
+        return res.json({
+          success: true,
+          response: {
+            message: bookingResponse.message,
+            type: "booking_flow",
+            step: bookingResponse.step,
+            isComplete: bookingResponse.isComplete,
+            needsConfirmation: bookingResponse.needsConfirmation,
+            data: bookingResponse.data,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Check for new booking intent with circuit breaker protection
+      let isBookingIntent = false;
+      try {
+        isBookingIntent = await serviceManager.executeServiceMethod(
           "aiService",
-          "extractBookingInfo",
+          "isBookingIntent",
           message
         );
+      } catch (error) {
+        logger.warn("AI booking intent detection failed, using fallback", {
+          sessionId,
+          error: error.message,
+        });
+        // Fallback to simple keyword detection
+        const bookingKeywords = [
+          "book",
+          "schedule",
+          "appointment",
+          "meeting",
+          "consultation",
+          "call",
+          "discuss",
+          "hire",
+          "quote",
+        ];
+        isBookingIntent = bookingKeywords.some((keyword) =>
+          message.toLowerCase().includes(keyword)
+        );
+      }
+
+      if (isBookingIntent) {
+        // Handle new booking flow
+        logger.info("New booking intent detected", { sessionId });
+
+        let extractedInfo = {};
+        try {
+          extractedInfo = await serviceManager.executeServiceMethod(
+            "aiService",
+            "extractBookingInfo",
+            message,
+            {}
+          );
+        } catch (error) {
+          logger.warn("AI extraction failed for new booking", {
+            sessionId,
+            error: error.message,
+          });
+          // Continue with empty extracted info - bookingService will handle it
+        }
 
         const bookingResponse = bookingService.processBookingStep(
           sessionId,

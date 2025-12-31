@@ -252,20 +252,34 @@ Respond with only "YES" or "NO":`;
    */
   async extractBookingInfo(message, currentInfo = {}) {
     try {
-      const extractionPrompt = `Extract booking information from this message. Return a JSON object with any available information:
+      // Get the current booking state to understand what we're asking for
+      const currentStep = this.getCurrentBookingStep(currentInfo);
 
+      const extractionPrompt = `You are helping extract booking information from a conversational flow. 
+
+Current booking step: ${currentStep}
 Current booking info: ${JSON.stringify(currentInfo)}
-New message: "${message}"
+User's latest message: "${message}"
 
-Extract and return JSON with these fields (only include if mentioned):
+Based on the current step and message, extract relevant information. If the user is responding to a specific question about ${currentStep}, treat their response as the answer to that field.
+
+Return a JSON object with any available information:
 {
-  "name": "full name if provided",
-  "email": "email address if provided", 
-  "company": "company name if provided",
-  "inquiry": "what service/project they're interested in",
-  "preferredTime": "any time/date preferences mentioned",
-  "duration": "meeting duration if specified (15, 30, 45, or 60 minutes)"
+  "name": "full name if provided or if this is a name response",
+  "email": "email address if provided or if this is an email response", 
+  "company": "company name if provided or if this is a company response",
+  "inquiry": "what service/project they're interested in or if this describes their needs",
+  "dateTime": "convert any time/date preferences to ISO format if possible",
+  "duration": "meeting duration if specified (convert to number: 15, 30, 45, or 60)"
 }
+
+IMPORTANT: 
+- If current step is "name" and message looks like a name, put it in "name" field
+- If current step is "email" and message looks like an email, put it in "email" field  
+- If current step is "company" and message is a company name, put it in "company" field
+- If current step is "inquiry" and message describes a project/need, put it in "inquiry" field
+- If current step is "dateTime" and message mentions time/date, convert to "dateTime" field
+- If current step is "duration" and message mentions time length, convert to "duration" field
 
 Return only the JSON object:`;
 
@@ -278,12 +292,71 @@ Return only the JSON object:`;
         if (jsonMatch) {
           const extractedInfo = JSON.parse(jsonMatch[0]);
 
+          // If we're in a specific step and got a simple response, map it directly
+          if (
+            currentStep &&
+            message.trim() &&
+            !message.includes("@") &&
+            !message.includes(".com")
+          ) {
+            switch (currentStep) {
+              case "name":
+                if (
+                  !extractedInfo.name &&
+                  message.length < 100 &&
+                  !message.toLowerCase().includes("book")
+                ) {
+                  extractedInfo.name = message.trim();
+                }
+                break;
+              case "company":
+                if (!extractedInfo.company && message.length < 100) {
+                  extractedInfo.company = message.trim();
+                }
+                break;
+              case "inquiry":
+                if (!extractedInfo.inquiry) {
+                  extractedInfo.inquiry = message.trim();
+                }
+                break;
+            }
+          }
+
+          // Special handling for email detection
+          if (currentStep === "email" && message.includes("@")) {
+            const emailMatch = message.match(
+              /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+            );
+            if (emailMatch) {
+              extractedInfo.email = emailMatch[0];
+            }
+          }
+
+          // Special handling for duration
+          if (currentStep === "duration") {
+            const durationMatch = message.match(
+              /(\d+)\s*(min|minute|minutes|hour|hours)?/i
+            );
+            if (durationMatch) {
+              let duration = parseInt(durationMatch[1]);
+              if (
+                durationMatch[2] &&
+                durationMatch[2].toLowerCase().includes("hour")
+              ) {
+                duration *= 60;
+              }
+              if ([15, 30, 45, 60].includes(duration)) {
+                extractedInfo.duration = duration;
+              }
+            }
+          }
+
           // Merge with current info, prioritizing new information
           return {
             ...currentInfo,
             ...Object.fromEntries(
               Object.entries(extractedInfo).filter(
-                ([_, value]) => value && value.trim() !== ""
+                ([_, value]) => value && value.toString().trim() !== ""
               )
             ),
           };
@@ -297,6 +370,32 @@ Return only the JSON object:`;
       console.error("Error extracting booking info:", error);
       return currentInfo;
     }
+  }
+
+  /**
+   * Determine current booking step based on available information
+   */
+  getCurrentBookingStep(currentInfo) {
+    const requiredFields = [
+      "name",
+      "email",
+      "company",
+      "inquiry",
+      "dateTime",
+      "duration",
+    ];
+
+    for (const field of requiredFields) {
+      if (
+        !currentInfo[field] ||
+        (typeof currentInfo[field] === "string" &&
+          currentInfo[field].trim() === "")
+      ) {
+        return field;
+      }
+    }
+
+    return "confirmation";
   }
 
   /**

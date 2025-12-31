@@ -362,8 +362,16 @@ class BookingService {
       bookingState = this.initializeBookingFlow(sessionId);
     }
 
-    // Update booking data with extracted information
-    bookingState.data = { ...bookingState.data, ...extractedInfo };
+    // Process the user input based on current step
+    const processedInfo = this.processUserInputForCurrentStep(
+      bookingState.step,
+      userInput,
+      extractedInfo,
+      bookingState.data
+    );
+
+    // Update booking data with processed information
+    bookingState.data = { ...bookingState.data, ...processedInfo };
 
     // Determine next step based on current state and available data
     const nextStep = this.determineNextStep(bookingState);
@@ -388,6 +396,211 @@ class BookingService {
       data: bookingState.data,
       needsConfirmation: nextStep === "confirmation",
     };
+  }
+
+  /**
+   * Process user input specifically for the current booking step
+   * @param {string} currentStep - Current step in booking flow
+   * @param {string} userInput - User's message
+   * @param {Object} extractedInfo - AI-extracted information
+   * @param {Object} currentData - Current booking data
+   * @returns {Object} - Processed information for this step
+   */
+  processUserInputForCurrentStep(
+    currentStep,
+    userInput,
+    extractedInfo,
+    currentData
+  ) {
+    const processed = { ...extractedInfo };
+    const input = userInput.trim();
+
+    // Direct mapping based on current step if AI extraction didn't catch it
+    switch (currentStep) {
+      case "name":
+        if (
+          !processed.name &&
+          input &&
+          input.length < 100 &&
+          !input.includes("@")
+        ) {
+          // Simple heuristic: if it looks like a name (2-3 words, no special chars)
+          if (/^[a-zA-Z\s]{2,50}$/.test(input)) {
+            processed.name = input;
+          }
+        }
+        break;
+
+      case "email":
+        if (!processed.email) {
+          const emailMatch = input.match(
+            /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+          );
+          if (emailMatch) {
+            processed.email = emailMatch[0];
+          }
+        }
+        break;
+
+      case "company":
+        if (!processed.company && input && input.length < 200) {
+          processed.company = input;
+        }
+        break;
+
+      case "inquiry":
+        if (!processed.inquiry && input) {
+          processed.inquiry = input;
+        }
+        break;
+
+      case "dateTime":
+        if (!processed.dateTime) {
+          const parsedDateTime = this.parseDateTime(input);
+          if (parsedDateTime) {
+            processed.dateTime = parsedDateTime;
+          }
+        }
+        break;
+
+      case "duration":
+        if (!processed.duration) {
+          const parsedDuration = this.parseDuration(input);
+          if (parsedDuration) {
+            processed.duration = parsedDuration;
+          }
+        }
+        break;
+    }
+
+    return processed;
+  }
+
+  /**
+   * Parse natural language date/time input
+   * @param {string} input - User's date/time input
+   * @returns {string|null} - ISO date string or null
+   */
+  parseDateTime(input) {
+    const inputLower = input.toLowerCase();
+    const now = new Date();
+
+    try {
+      // Handle "tomorrow"
+      if (inputLower.includes("tomorrow")) {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Extract time if mentioned
+        const timeMatch = input.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+        if (timeMatch) {
+          let hour = parseInt(timeMatch[1]);
+          const minute = parseInt(timeMatch[2] || "0");
+          const ampm = timeMatch[3]?.toLowerCase();
+
+          if (ampm === "pm" && hour !== 12) hour += 12;
+          if (ampm === "am" && hour === 12) hour = 0;
+
+          tomorrow.setHours(hour, minute, 0, 0);
+        } else {
+          tomorrow.setHours(14, 0, 0, 0); // Default to 2 PM
+        }
+
+        return tomorrow.toISOString();
+      }
+
+      // Handle "next week", "next monday", etc.
+      if (inputLower.includes("next week")) {
+        const nextWeek = new Date(now);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        nextWeek.setHours(14, 0, 0, 0); // Default to 2 PM
+        return nextWeek.toISOString();
+      }
+
+      // Handle specific days of the week
+      const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+      for (let i = 0; i < days.length; i++) {
+        if (inputLower.includes(days[i])) {
+          const targetDay = new Date(now);
+          const currentDay = now.getDay();
+          const targetDayNum = i + 1; // Monday = 1, etc.
+
+          let daysToAdd = targetDayNum - currentDay;
+          if (daysToAdd <= 0) daysToAdd += 7; // Next week if day has passed
+
+          targetDay.setDate(targetDay.getDate() + daysToAdd);
+          targetDay.setHours(14, 0, 0, 0); // Default to 2 PM
+
+          // Extract time if mentioned
+          const timeMatch = input.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+          if (timeMatch) {
+            let hour = parseInt(timeMatch[1]);
+            const minute = parseInt(timeMatch[2] || "0");
+            const ampm = timeMatch[3]?.toLowerCase();
+
+            if (ampm === "pm" && hour !== 12) hour += 12;
+            if (ampm === "am" && hour === 12) hour = 0;
+
+            targetDay.setHours(hour, minute, 0, 0);
+          }
+
+          return targetDay.toISOString();
+        }
+      }
+
+      // Try to parse as a regular date
+      const parsed = new Date(input);
+      if (!isNaN(parsed.getTime()) && parsed > now) {
+        return parsed.toISOString();
+      }
+    } catch (error) {
+      console.error("Error parsing date/time:", error);
+    }
+
+    return null;
+  }
+
+  /**
+   * Parse duration from natural language input
+   * @param {string} input - User's duration input
+   * @returns {number|null} - Duration in minutes or null
+   */
+  parseDuration(input) {
+    const inputLower = input.toLowerCase();
+
+    // Look for explicit numbers
+    const numberMatch = input.match(
+      /(\d+)\s*(min|minute|minutes|hour|hours)?/i
+    );
+    if (numberMatch) {
+      let duration = parseInt(numberMatch[1]);
+      const unit = numberMatch[2]?.toLowerCase();
+
+      if (unit && unit.includes("hour")) {
+        duration *= 60;
+      }
+
+      // Validate against allowed durations
+      if (this.validDurations.includes(duration)) {
+        return duration;
+      }
+    }
+
+    // Handle common phrases
+    if (inputLower.includes("half hour") || inputLower.includes("30")) {
+      return 30;
+    }
+    if (inputLower.includes("hour") || inputLower.includes("60")) {
+      return 60;
+    }
+    if (inputLower.includes("15") || inputLower.includes("quarter")) {
+      return 15;
+    }
+    if (inputLower.includes("45")) {
+      return 45;
+    }
+
+    return null;
   }
 
   /**
