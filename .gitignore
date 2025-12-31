@@ -94,3 +94,7 @@ test-credentials.json
 
 # Widget test files with real API keys
 widget-test-live.html
+# Google Cloud Service Account credentials
+metalogics-chatbot.json
+*.service-account.json
+service-account-*.json
