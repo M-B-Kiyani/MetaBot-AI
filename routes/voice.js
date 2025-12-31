@@ -9,153 +9,159 @@ const router = express.Router();
  * POST /api/voice/webhook
  * Handle webhooks from Retell AI
  */
-router.post(
-  "/webhook",
-  [
-    // Raw body parser middleware for signature verification
-    express.raw({ type: "application/json" }),
-  ],
-  async (req, res) => {
-    try {
-      // Get signature from headers
-      const signature =
-        req.get("X-Retell-Signature") || req.get("x-retell-signature");
+router.post("/webhook", async (req, res) => {
+  try {
+    // Get signature from headers
+    const signature =
+      req.get("X-Retell-Signature") || req.get("x-retell-signature");
 
-      if (!signature && process.env.NODE_ENV === "production") {
-        logger.warn("Missing webhook signature", { ip: req.ip });
-        return res.status(401).json({
-          success: false,
-          error: {
-            code: "MISSING_SIGNATURE",
-            message: "Webhook signature required",
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-
-      // Parse the raw body
-      let webhookData;
-      try {
-        webhookData = JSON.parse(req.body.toString());
-      } catch (parseError) {
-        logger.error("Invalid webhook JSON", {
-          error: parseError.message,
-          body: req.body.toString(),
-          ip: req.ip,
-        });
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: "INVALID_JSON",
-            message: "Invalid JSON payload",
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-
-      // Validate required webhook fields
-      const { event_type, call_id } = webhookData;
-
-      if (!event_type || !call_id) {
-        logger.warn("Missing required webhook fields", {
-          event_type,
-          call_id,
-          ip: req.ip,
-        });
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: "MISSING_FIELDS",
-            message: "Missing required webhook fields (event_type, call_id)",
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-
-      logger.info("Received Retell webhook", {
-        event_type,
-        call_id,
-        ip: req.ip,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Get voice handler from service manager
-      const voiceHandler = serviceManager.getService("voiceHandler");
-
-      // Process webhook through voice handler
-      const result = await voiceHandler.handleWebhook(
-        webhookData,
-        signature || ""
-      );
-
-      if (!result.success) {
-        logger.error("Voice handler failed", {
-          event_type,
-          call_id,
-          error: result.error,
-        });
-
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: "WEBHOOK_PROCESSING_FAILED",
-            message: result.error || "Failed to process webhook",
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-
-      // Return appropriate response based on event type
-      if (result.response) {
-        logger.info("Webhook processed successfully with response", {
-          event_type,
-          call_id,
-          hasMessage: !!result.response.message,
-          endCall: result.response.end_call,
-        });
-
-        return res.json({
-          success: true,
-          response: result.response,
-          timestamp: new Date().toISOString(),
-        });
-      } else {
-        logger.info("Webhook processed successfully", {
-          event_type,
-          call_id,
-          message: result.message,
-        });
-
-        return res.json({
-          success: true,
-          message: result.message || "Webhook processed successfully",
-          timestamp: new Date().toISOString(),
-        });
-      }
-    } catch (error) {
-      logger.error("Error processing voice webhook", {
-        error: error.message,
-        stack: error.stack,
-        body: req.body?.toString(),
-        ip: req.ip,
-      });
-
-      return res.status(500).json({
+    if (
+      !signature &&
+      process.env.NODE_ENV === "production" &&
+      process.env.RETELL_WEBHOOK_SECRET
+    ) {
+      logger.warn("Missing webhook signature", { ip: req.ip });
+      return res.status(401).json({
         success: false,
         error: {
-          code: "INTERNAL_ERROR",
-          message: "Unable to process webhook",
+          code: "MISSING_SIGNATURE",
+          message: "Webhook signature required",
           timestamp: new Date().toISOString(),
-        },
-        response: {
-          message:
-            "I'm sorry, I'm experiencing technical difficulties. Please try again later.",
-          end_call: false,
         },
       });
     }
+
+    // Parse the body (handle both raw and JSON)
+    let webhookData;
+    try {
+      if (typeof req.body === "string") {
+        webhookData = JSON.parse(req.body);
+      } else if (Buffer.isBuffer(req.body)) {
+        webhookData = JSON.parse(req.body.toString());
+      } else if (typeof req.body === "object") {
+        webhookData = req.body;
+      } else {
+        throw new Error("Invalid body format");
+      }
+    } catch (parseError) {
+      logger.error("Invalid webhook JSON", {
+        error: parseError.message,
+        bodyType: typeof req.body,
+        body: req.body?.toString?.() || req.body,
+        ip: req.ip,
+      });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "INVALID_JSON",
+          message: "Invalid JSON payload",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Validate required webhook fields
+    const { event_type, call_id } = webhookData;
+
+    if (!event_type || !call_id) {
+      logger.warn("Missing required webhook fields", {
+        event_type,
+        call_id,
+        ip: req.ip,
+      });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_FIELDS",
+          message: "Missing required webhook fields (event_type, call_id)",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    logger.info("Received Retell webhook", {
+      event_type,
+      call_id,
+      ip: req.ip,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Get voice handler from service manager
+    const voiceHandler = serviceManager.getService("voiceHandler");
+
+    // Process webhook through voice handler
+    const result = await voiceHandler.handleWebhook(
+      webhookData,
+      signature || ""
+    );
+
+    if (!result.success) {
+      logger.error("Voice handler failed", {
+        event_type,
+        call_id,
+        error: result.error,
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "WEBHOOK_PROCESSING_FAILED",
+          message: result.error || "Failed to process webhook",
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Return appropriate response based on event type
+    if (result.response) {
+      logger.info("Webhook processed successfully with response", {
+        event_type,
+        call_id,
+        hasMessage: !!result.response.message,
+        endCall: result.response.end_call,
+      });
+
+      return res.json({
+        success: true,
+        response: result.response,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      logger.info("Webhook processed successfully", {
+        event_type,
+        call_id,
+        message: result.message,
+      });
+
+      return res.json({
+        success: true,
+        message: result.message || "Webhook processed successfully",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    logger.error("Error processing voice webhook", {
+      error: error.message,
+      stack: error.stack,
+      body: req.body?.toString(),
+      ip: req.ip,
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Unable to process webhook",
+        timestamp: new Date().toISOString(),
+      },
+      response: {
+        message:
+          "I'm sorry, I'm experiencing technical difficulties. Please try again later.",
+        end_call: false,
+      },
+    });
   }
-);
+});
 
 /**
  * GET /api/voice/sessions

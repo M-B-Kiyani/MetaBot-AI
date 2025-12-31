@@ -101,9 +101,14 @@ class BookingService {
       };
     }
 
-    // Check business hours (9 AM to 6 PM, Monday to Friday)
+    // Check business hours (9 AM to 6 PM, Monday to Friday) in Europe/London timezone
     const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const hour = date.getHours();
+
+    // Convert to London timezone for business hours check
+    const londonTime = new Date(
+      date.toLocaleString("en-US", { timeZone: "Europe/London" })
+    );
+    const hour = londonTime.getHours();
 
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       return {
@@ -115,16 +120,21 @@ class BookingService {
     if (hour < 9 || hour >= 18) {
       return {
         isValid: false,
-        message: "Bookings are only available between 9 AM and 6 PM",
+        message:
+          "Bookings are only available between 9 AM and 6 PM (London time)",
       };
     }
 
-    // Check if the end time would exceed business hours
+    // Check if the end time would exceed business hours (in London timezone)
     const endTime = new Date(date.getTime() + duration * 60 * 1000);
-    if (endTime.getHours() > 18) {
+    const londonEndTime = new Date(
+      endTime.toLocaleString("en-US", { timeZone: "Europe/London" })
+    );
+    if (londonEndTime.getHours() > 18) {
       return {
         isValid: false,
-        message: "Meeting would extend beyond business hours (6 PM)",
+        message:
+          "Meeting would extend beyond business hours (6 PM London time)",
       };
     }
 

@@ -11,7 +11,7 @@ console.log("🔧 Testing Railway API Connection...");
 const testEndpoints = [
   "https://metabot-ai-production.up.railway.app",
   "https://metabot-ai-production.up.railway.app/health",
-  "https://metabot-ai-production.up.railway.app/api/health",
+  "https://metabot-ai-production.up.railway.app/api/status",
 ];
 
 async function testEndpoint(url) {
