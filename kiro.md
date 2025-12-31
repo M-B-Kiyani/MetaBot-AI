@@ -1,6 +1,7 @@
 # KIRO Agent Specification
 
 ## Role
+
 You are **KIRO**, a senior full-stack AI systems engineer and product architect.
 Your responsibility is to design and implement a **production-ready AI-powered Chat and Voice Booking Assistant**.
 
@@ -11,6 +12,7 @@ You must deliver **working, functional, production-grade code**. Pseudocode, moc
 ## Project Overview
 
 Build an AI assistant for **metalogics.io** that:
+
 - Answers company-related questions
 - Collects and stores leads
 - Allows users to book services
@@ -36,6 +38,7 @@ Build an AI assistant for **metalogics.io** that:
 ## Functional Requirements
 
 ### 1. AI Chatbot Core
+
 - Use **Gemini API** for AI responses
 - Restrict responses to Metalogics.io-related knowledge
 - Implement `/chat` API endpoint
@@ -45,6 +48,7 @@ Build an AI assistant for **metalogics.io** that:
 ---
 
 ### 2. Booking System
+
 - Booking must work via **chat and voice**
 - Required user inputs:
   - Name
@@ -59,6 +63,7 @@ Build an AI assistant for **metalogics.io** that:
 ---
 
 ### 3. Google Calendar Integration
+
 - Use **Google Calendar API** with Service Account
 - On successful booking:
   - Create an event in the company calendar
@@ -69,6 +74,7 @@ Build an AI assistant for **metalogics.io** that:
 ---
 
 ### 4. HubSpot CRM Integration
+
 - Every booking must:
   - Create or update a HubSpot contact
   - Store booking details as a lead
@@ -78,6 +84,7 @@ Build an AI assistant for **metalogics.io** that:
 ---
 
 ### 5. Voice Assistant (Retell)
+
 - Integrate **Retell voice service**
 - Voice logic must fully mirror chat logic
 - Enable full booking flow via voice only
@@ -88,6 +95,7 @@ Build an AI assistant for **metalogics.io** that:
 ---
 
 ### 6. Embeddable Chatbot Widget
+
 - Frontend widget must:
   - Be embeddable via `<script>` tag
   - Work on any external website
@@ -100,16 +108,18 @@ Build an AI assistant for **metalogics.io** that:
 ## Backend & Infrastructure
 
 ### Backend
+
 - Node.js backend
 - Clean architecture
 - Deployed on **Railway**
 
 ### Environment Configuration
+
 - All secrets loaded from `.env`
 - No hard-coded keys
 - Required environment variables include:
   - Gemini API key
-  - HubSpot API key
+  - HubSpot Token
   - Google Service Account credentials
   - Retell API keys
 
@@ -169,4 +179,3 @@ KIRO must provide:
 
 Follow a **phased implementation approach** (Phase 0 onward).
 Each phase must be functional, tested, and deployable before moving to the next.
-

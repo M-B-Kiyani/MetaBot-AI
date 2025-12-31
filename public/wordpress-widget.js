@@ -426,7 +426,12 @@
 
       if (data.success) {
         widgetState.conversationId = data.conversationId;
-        return data.response;
+        
+        // Handle object response from backend
+        if (typeof data.response === 'object' && data.response !== null) {
+            return data.response;
+        }
+        return { message: data.response }; // normalize to object
       } else {
         throw new Error(data.error?.message || "Unknown error occurred");
       }
@@ -567,7 +572,16 @@
 
       // Hide typing indicator and add response
       hideTypingIndicator();
-      addMessage(response, false);
+      
+      const messageText = response.message || response;
+      addMessage(messageText, false);
+
+      // Handle booking confirmation specially if needed
+      if (response.type === 'booking_confirmed' && response.booking) {
+         // Optional: Add a visual confirmation card or triggers here
+         // The text message for confirmation is already detailed in the backend response
+      }
+
     } catch (error) {
       hideTypingIndicator();
       addMessage(

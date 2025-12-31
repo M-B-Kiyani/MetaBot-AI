@@ -96,11 +96,12 @@ class MetalogicsWidget {
       this.hideTypingIndicator();
 
       if (response.success) {
-        this.addMessage(response.message, "assistant");
+        const responseData = response.response;
+        this.addMessage(responseData.message, "assistant");
 
         // Handle booking flow if needed
-        if (response.bookingInProgress) {
-          this.handleBookingFlow(response);
+        if (responseData.type === 'booking_confirmed') {
+           this.showBookingConfirmation(responseData.booking);
         }
       } else {
         this.addMessage(
@@ -223,7 +224,7 @@ class MetalogicsWidget {
             ✅ Booking confirmed! 
             
             Details:
-            • Date: ${bookingDetails.dateTime}
+            • Date: ${new Date(bookingDetails.dateTime).toLocaleString()}
             • Duration: ${bookingDetails.duration} minutes
             • Meeting link will be sent to: ${bookingDetails.email}
             

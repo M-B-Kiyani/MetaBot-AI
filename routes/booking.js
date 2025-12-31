@@ -157,6 +157,9 @@ router.post(
               success: integrationResults.hubspot.success,
               contactId: integrationResults.hubspot.contactId,
             },
+            email: {
+              success: integrationResults.email.success
+            }
           },
         },
         message: "Booking created successfully",
@@ -484,6 +487,7 @@ async function processBookingIntegrations(booking) {
   const integrationResults = {
     calendar: { success: false, error: null, eventId: null, meetingLink: null },
     hubspot: { success: false, error: null, contactId: null },
+    email: { success: false, error: null }
   };
 
   // Calendar integration with circuit breaker protection
@@ -552,6 +556,36 @@ async function processBookingIntegrations(booking) {
       error: error.message,
       circuitBreakerOpen: error.circuitBreakerOpen || false,
       bookingId: booking.id,
+    });
+  }
+
+
+
+  // Email integration with circuit breaker protection
+  try {
+    logger.info(`Sending confirmation email for booking: ${booking.id}`);
+
+    const emailResult = await serviceManager.executeServiceMethod(
+        "emailService",
+        "sendBookingConfirmation",
+        booking
+    );
+
+    if (emailResult.success) {
+        integrationResults.email.success = true;
+        logger.info(`Confirmation email sent successfully`);
+    } else {
+        integrationResults.email.error = emailResult.error;
+        if (!emailResult.skipped) {
+            logger.warn(`Confirmation email failed: ${emailResult.error}`);
+        }
+    }
+  } catch (error) {
+    integrationResults.email.error = error.message;
+    logger.error("Error sending confirmation email:", {
+        error: error.message,
+        circuitBreakerOpen: error.circuitBreakerOpen || false,
+        bookingId: booking.id
     });
   }
 

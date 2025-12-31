@@ -181,7 +181,12 @@ const validateContentType = (req, res, next) => {
   if (
     req.method === "GET" ||
     req.path === "/health" ||
-    req.path === "/api/status"
+    req.path === "/api/status" ||
+    req.path.startsWith("/widget") ||
+    req.path === "/test" ||
+    req.path.endsWith(".html") ||
+    req.path.endsWith(".js") ||
+    req.path.endsWith(".css")
   ) {
     return next();
   }

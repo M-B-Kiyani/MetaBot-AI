@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Widget Test - Local Development</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 40px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .status {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+      }
+      .test-buttons {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      button {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 24px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🤖 AI Booking Assistant - Local Test</h1>
+
+      <div class="status">
+        <h3>Server Status</h3>
+        <p id="server-status">Checking...</p>
+      </div>
+
+      <div class="status">
+        <h3>Widget Status</h3>
+        <p id="widget-status">Loading...</p>
+      </div>
+
+      <div class="test-buttons">
+        <button onclick="testChat()">Test Chat API</button>
+        <button onclick="testWidget()">Test Widget</button>
+        <button onclick="checkHealth()">Check Health</button>
+      </div>
+
+      <div id="test-results" style="margin-top: 20px"></div>
+    </div>
+
+    <script>
+      // Test functions
+      async function checkHealth() {
+        try {
+          const response = await fetch("/health");
+          const data = await response.json();
+          document.getElementById("server-status").innerHTML = `✅ Server is ${
+            data.status
+          } (Uptime: ${data.uptimeHuman || "N/A"})`;
+        } catch (error) {
+          document.getElementById(
+            "server-status"
+          ).innerHTML = `❌ Server error: ${error.message}`;
+        }
+      }
+
+      async function testChat() {
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: "Hello, tell me about Metalogics services",
+              sessionId: "test-" + Date.now(),
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            document.getElementById(
+              "test-results"
+            ).innerHTML = `<div style="background: rgba(0,255,0,0.2); padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <strong>✅ Chat API Working!</strong><br>
+                            Response: ${data.response.substring(0, 200)}...
+                        </div>`;
+          } else {
+            throw new Error(data.error?.message || "Unknown error");
+          }
+        } catch (error) {
+          document.getElementById(
+            "test-results"
+          ).innerHTML = `<div style="background: rgba(255,0,0,0.2); padding: 15px; border-radius: 10px; margin: 10px 0;">
+                        <strong>❌ Chat API Error:</strong> ${error.message}
+                    </div>`;
+        }
+      }
+
+      function testWidget() {
+        if (typeof MetalogicsWidgetAPI !== "undefined") {
+          MetalogicsWidgetAPI.open();
+          document.getElementById("widget-status").innerHTML =
+            "✅ Widget is working!";
+        } else {
+          document.getElementById("widget-status").innerHTML =
+            "❌ Widget not loaded";
+        }
+      }
+
+      // Check widget status periodically
+      function checkWidgetStatus() {
+        if (typeof MetalogicsWidgetAPI !== "undefined") {
+          document.getElementById("widget-status").innerHTML =
+            "✅ Widget loaded and ready";
+        } else {
+          document.getElementById("widget-status").innerHTML =
+            "⏳ Widget loading...";
+          setTimeout(checkWidgetStatus, 1000);
+        }
+      }
+
+      // Initialize
+      checkHealth();
+      checkWidgetStatus();
+
+      console.log("🚀 Test page loaded");
+      console.log("📍 Current URL:", window.location.href);
+    </script>
+
+    <!-- Load the widget -->
+    <script
+      src="/embed.js"
+      data-api-url="http://localhost:3000"
+      data-theme="default"
+      data-welcome-message="Hello! I'm testing the Metalogics AI Assistant locally. How can I help you?"
+    ></script>
+  </body>
+</html>

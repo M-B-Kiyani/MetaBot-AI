@@ -87,7 +87,7 @@ class CalendarService {
    * @returns {string} - Formatted event description
    */
   generateEventDescription(eventData) {
-    return `Consultation Meeting
+    return `Consultation Meeting - BOOKING CONFIRMED
 
 Client Information:
 • Name: ${eventData.name}
@@ -98,6 +98,9 @@ Project Details:
 ${eventData.inquiry}
 
 Meeting Duration: ${eventData.duration} minutes.
+
+IMPORTANT: This event was created via service account. 
+Please manually invite the client: ${eventData.email}
 
 ---
 This meeting was scheduled through the Metalogics.io booking system.
@@ -159,27 +162,16 @@ For any questions or changes, please contact: hello@metalogics.io`;
           dateTime: endTime.toISOString(),
           timeZone: this.timeZone,
         },
-        attendees: [
-          {
-            email: eventData.email,
-            displayName: eventData.name,
-          },
-        ],
+        // Note: Attendees removed to avoid Domain-Wide Delegation requirement
+        // The client email and details are included in the description instead
         reminders: {
           useDefault: false,
           overrides: [
-            { method: "email", minutes: 24 * 60 }, // 24 hours before
             { method: "popup", minutes: 15 }, // 15 minutes before
           ],
         },
-        conferenceData: {
-          createRequest: {
-            requestId: `booking-${Date.now()}`,
-            conferenceSolutionKey: {
-              type: "hangoutsMeet",
-            },
-          },
-        },
+        // Note: Conference data removed due to service account limitations
+        // Meeting link can be added manually or through a different method
       };
 
       // Create the event with proper error handling
@@ -192,8 +184,7 @@ For any questions or changes, please contact: hello@metalogics.io`;
       const response = await this.calendar.events.insert({
         calendarId: this.calendarId,
         resource: event,
-        conferenceDataVersion: 1,
-        sendUpdates: "all", // Send email invitations to attendees
+        sendUpdates: "none", // Don't send email invitations since we can't add attendees
       });
 
       this.logger.info(

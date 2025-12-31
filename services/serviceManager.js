@@ -3,6 +3,7 @@ const BookingService = require("./bookingService");
 const CalendarService = require("./calendarService");
 const LeadManager = require("./leadManager");
 const VoiceHandler = require("./voiceHandler");
+const EmailService = require("./emailService");
 const { logger } = require("../utils/logger");
 const {
   ErrorClassifier,
@@ -281,12 +282,21 @@ class ServiceManager {
           resetTimeout: 30000,
         })
       );
+      
+      this.circuitBreakers.set(
+        "email",
+        new CircuitBreaker("email", {
+            failureThreshold: 3,
+            resetTimeout: 60000,
+        })
+      );
 
       // Initialize core services
       await this._initializeAIService();
       await this._initializeBookingService();
       await this._initializeCalendarService();
       await this._initializeLeadManager();
+      await this._initializeEmailService();
       await this._initializeVoiceHandler();
 
       // Set up fallback handlers
@@ -530,6 +540,53 @@ class ServiceManager {
         error: error.message,
         lastCheck: new Date(),
       });
+    }
+  }
+
+  /**
+   * Initialize Email Service
+   * @private
+   */
+  async _initializeEmailService() {
+    try {
+        const emailService = new EmailService();
+        await emailService.initialize();
+
+        // Wrap email service methods with circuit breaker
+        const originalSendConfirmation = emailService.sendBookingConfirmation.bind(emailService);
+        emailService.sendBookingConfirmation = async (booking) => {
+            const circuitBreaker = this.circuitBreakers.get("email");
+            return circuitBreaker.execute(
+                () => originalSendConfirmation(booking),
+                { operation: "sendBookingConfirmation", bookingId: booking.id }
+            );
+        };
+
+        this.services.set("emailService", emailService);
+        this.serviceHealth.set("emailService", {
+            healthy: emailService.initialized,
+            lastCheck: new Date()
+        });
+        
+        if (emailService.initialized) {
+            logger.info("Email Service initialized with circuit breaker protection");
+        } else {
+            logger.warn("Email Service initialized but disabled (missing config)");
+        }
+
+    } catch (error) {
+        logger.warn("Email Service initialization failed", { error: error.message });
+        this.serviceHealth.set("emailService", {
+            healthy: false,
+            error: error.message,
+            lastCheck: new Date()
+        });
+        
+        // Fallback email service
+        this.services.set("emailService", {
+            sendBookingConfirmation: async () => ({ success: false, skipped: true }),
+            initialize: async () => {}
+        });
     }
   }
 
@@ -792,6 +849,7 @@ class ServiceManager {
         "listAvailableSlots",
       ],
       leadManager: ["createOrUpdateContact", "checkExistingContact"],
+      emailService: ["sendBookingConfirmation"]
     };
 
     return externalAPIMethods[serviceName]?.includes(methodName) || false;

@@ -7,6 +7,7 @@ A comprehensive Node.js application that provides conversational AI capabilities
 - 🤖 AI-powered chat using Gemini API
 - 📅 Google Calendar integration for booking management
 - 🎯 HubSpot CRM integration for lead management
+- ✉️ Automated email confirmations
 - 🎙️ Voice interaction support via Retell AI
 - 🌐 Embeddable widget for external websites
 - 🔒 Production-ready security and error handling
@@ -96,6 +97,9 @@ npm start
 | `RETELL_WEBHOOK_SECRET`        | Retell webhook secret              | Yes      |
 | `GOOGLE_CALENDAR_ID`           | Target Google Calendar ID          | Yes      |
 | `TIMEZONE`                     | Default timezone                   | No       |
+| `EMAIL_USER`                   | Email account user                 | Yes      |
+| `EMAIL_PASS`                   | Email App Password                 | Yes      |
+| `EMAIL_SERVICE`                | Email provider (default: gmail)    | No       |
 
 ## API Endpoints
 
