@@ -24,6 +24,7 @@ const securityHeaders = helmet({
     },
   },
   crossOriginEmbedderPolicy: false, // Allow embedding for widget functionality
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow resources to be loaded by other origins
   hsts: {
     maxAge: 31536000, // 1 year
     includeSubDomains: true,
