@@ -410,11 +410,12 @@
         body: JSON.stringify({
           message: message,
           conversationId: widgetState.conversationId,
-          context: {
-            source: "wordpress-widget",
-            url: window.location.href,
-            title: document.title,
-          },
+          context: [
+            {
+              role: "system",
+              content: `User is visiting: ${document.title} (${window.location.href})`
+            }
+          ],
         }),
       });
 
